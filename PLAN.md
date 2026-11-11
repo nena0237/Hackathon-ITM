@@ -15,10 +15,10 @@ Marca `[x]` = cerrada y verificada. Fase 1 = T1 a T4; el resto queda pendiente.
 - [x] **T4b — Lectura/escritura segura de datos guardados (pura, sin localStorage).** `serializarDespensa`, `leerDespensa`. Hecho cuando: tests de los grupos 8 y 10 pasan (corrupto, formato viejo, versión, ida y vuelta). _Cubre: base de R7._
 
 ### Flujo principal con seed (Fase 2)
-- [ ] **T5 — `src/data/seed.ts` con fechas relativas a hoy y `src/data/recetas.ts` con 12 recetas.** Hecho cuando: un test cuenta ≥3 cocinables y ≥2 parciales con 1 faltante con el seed, e incluye una receta que depende de la leche vencida. _R5, R8._
-- [ ] **T6 — Storage `foodsaver:v1`.** Hecho cuando: sin datos carga el seed; con datos corruptos no se rompe y avisa; recargar conserva todo. _R7._
-- [ ] **T7 — Pantalla Despensa.** Hecho cuando: lista ordenada, por vencer resaltado, vencidos en sección aparte (probado en navegador). _R2, R4._
-- [ ] **T8 — Pantalla Recetas.** Hecho cuando: cocinables primero, parciales con faltantes, muestra qué ingredientes por vencer aprovecha; "Huevos pericos" aprovecha tomate y huevos; "Arroz con leche" no es cocinable. _R5, R6, R8._
+- [x] **T5 — `src/data/seed.ts` con fechas relativas a hoy y `src/data/recetas.ts` con 12 recetas.** Hecho cuando: un test cuenta ≥3 cocinables y ≥2 parciales con 1 faltante con el seed, e incluye una receta que depende de la leche vencida. _R5, R8._
+- [x] **T6 — Storage `foodsaver:v1`.** Hecho cuando: sin datos carga el seed; con datos corruptos no se rompe y avisa; recargar conserva todo. _R7._
+- [x] **T7 — Pantalla Despensa.** Hecho cuando: lista ordenada, por vencer resaltado, vencidos en sección aparte (probado en navegador). _R2, R4._
+- [x] **T8 — Pantalla Recetas.** Hecho cuando: cocinables primero, parciales con faltantes, muestra qué ingredientes por vencer aprovecha; "Huevos pericos" aprovecha tomate y huevos; "Arroz con leche" no es cocinable. _R5, R6, R8._
 
 ### Resto de requisitos (Fase 3)
 - [ ] **T9 — Formulario agregar/editar con errores bajo cada campo.** Hecho cuando: cantidad 0, negativa, texto, vacía y 1e9 muestran mensaje en español sin `alert`. _R1, R3._
@@ -55,3 +55,15 @@ Qué cambió respecto a las instrucciones y por qué.
    - `normalizarNombre`: primero usé un marcador interno que podía confundirse con texto del usuario; se reemplazó por separar por `ñ`, sin marcadores.
 7. **Verificación de los tests (prueba de mutación):** se rompió la lógica a propósito 25 veces (script temporal fuera del repo); los 25 mutantes hicieron fallar al menos un test.
 8. **Correcciones previas de la Fase 2:** los 3 bugs de la Fase 1 se copiaron a `VERIFICATION.md` (Prueba = "detectado por tests propios (F1)") con síntoma, causa raíz, fix y re-prueba. Se hizo `git init` (rama `main`). `.gitignore` ya cubría `node_modules` y `dist`; `*.local` NO cubría `.claude/settings.local.json` (solo coincide con archivos que terminan en `.local`), así que se agregó la regla explícita y `.vitest`. Se verificó con `git status` que `.claude/settings.local.json` no entra al commit. Commit: "Fase 1".
+
+### Fase 2 — ajustes y hallazgos
+9. **Funciones nuevas en el dominio para que la UI no tenga lógica:** `sumarDias` (seed relativo a hoy sin `Date`), `estadoVencimiento`, y `presentacion.ts` (`formatearCantidad`, `describirVencimiento`, `describirFaltante`, `formatearFecha`, `capitalizar`). Todas con tests (`sumarDias` se compara contra un cálculo independiente con `Date.UTC` en ±800 días).
+10. **Receta ajustada por el ranking, no el ranking por la receta:** el primer test de demo falló porque "Arroz con pollo" (usaba pollo que vence hoy + tomate) empataba en urgencia 2 con "Huevos pericos" y ganaba por orden alfabético. El dominio cumplía las reglas del brief; se quitó el tomate de "Arroz con pollo" (urgencia 1) para que la demo abra con Huevos pericos.
+11. **Seed persistido en el primer arranque:** se guarda en `foodsaver:v1` al abrir por primera vez, para distinguir "nunca abrió la app" (→ seed) de "borró todo" (→ lista vacía guardada, no vuelve el seed). Las fechas del seed se calculan una vez, relativas a ese día.
+12. **Datos corruptos:** se carga el seed, se muestra un aviso (con motivo) y se guarda una copia del texto original en `foodsaver:v1:respaldo` (no se pierde lo que había). La carga se hace una sola vez en `main.tsx`, fuera de React: con `StrictMode` un `useState(() => cargar())` correría dos veces y la segunda ya leería el seed sin aviso.
+13. **`hoy` solo en la capa UI/storage:** `storage/reloj.ts` (`hoyLocal`) y el hook `useHoy`, que lo recalcula cada 30 s y al volver a la pestaña, así la app cambia de estado sola pasada la medianoche.
+14. **Bugs encontrados al probar en el navegador (corregidos):**
+    - `GET /favicon.ico` daba 404 y dejaba un error en consola → favicon SVG en línea en `index.html`.
+    - "Harina De Maíz": la clase CSS `capitalize` pone mayúscula a cada palabra → se reemplazó por `capitalizar()` (solo la primera letra) y los nombres de la despensa se muestran como se escribieron. **El script de navegador no lo detectó** (lee texto del DOM, no el render); lo vi en la captura. Lección: las capturas se revisan a ojo.
+    - "leche está vencido": error de género → mensaje sin concordancia: "Lo que tienes de leche está vencido…".
+15. **Verificación en navegador real (Edge, Playwright fuera del repo):** 49 comprobaciones pasan (flujo de demo, orden, vencidos aparte, recarga, grupos 7, 8 y 10, cambio de día con reloj simulado, sin errores en consola). **Límite honesto del grupo 10:** los formularios de agregar/editar/borrar son de la Fase 3; en esta fase las tres operaciones se simularon modificando `localStorage` directamente y recargando. La prueba con la interfaz real queda para la Fase 3.
