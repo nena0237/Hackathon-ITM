@@ -198,8 +198,10 @@ await irA('Despensa')
 await accion('seed-cebolla', 'Editar', 'Cebolla')
 await page.getByRole('form', { name: 'Editar Cebolla' }).getByLabel('Cantidad', { exact: true }).fill('99')
 await page.keyboard.press('Escape')
+ok((await page.getByText('¿Descartar lo escrito?').count()) === 1, 'Escape con cambios en la edición pide confirmar (AC-4)')
+await page.getByRole('button', { name: 'Descartar', exact: true }).click()
 await esperarCierre()
-ok(/2 unidades/.test(await texto(page.locator('li[data-id="seed-cebolla"]'))), 'Escape en el formulario de edición: NO guarda lo escrito')
+ok(/2 unidades/.test(await texto(page.locator('li[data-id="seed-cebolla"]'))), 'Descartar en el formulario de edición: NO guarda lo escrito')
 
 // ───────── 5. "USÉ" ─────────
 await accion('seed-huevos', 'Usé', 'Huevos')
@@ -211,6 +213,7 @@ for (const [valor, patron] of [['0', /mayor que 0/], ['-1', /mayor que 0/], ['ab
   ok(e.length === 1 && patron.test(e[0]), `Usé "${valor}": rechazado → "${e[0]}"`, e.join(' | '))
 }
 await page.keyboard.press('Escape')
+await page.getByRole('button', { name: 'Descartar', exact: true }).click() // quedó "6,01" escrito (AC-4)
 await esperarCierre()
 ok(/6 unidades/.test(await texto(page.locator('li[data-id="seed-huevos"]'))), 'Tras los intentos inválidos, huevos sigue en 6 unidades')
 await accion('seed-huevos', 'Usé', 'Huevos')

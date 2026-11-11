@@ -82,7 +82,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 | AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Corregido |
 | AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Corregido |
 | AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Corregido |
-| AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Reproducido |
+| AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Corregido |
 | AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Reproducido |
 | AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Reproducido |
 | AC-7 | Baja | Ids duplicados en el almacenamiento: la hoja abre otro ingrediente y borrar/editar afecta a ambos | Reproducido |
@@ -118,7 +118,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Causa raíz (investigada).** `onSolicitarCierre` es `setCerrando(true)` sin condiciones, y `Hoja.tsx` lo conecta a Escape, al clic del fondo (`hoja-fondo`) y a la X. Los formularios guardan sus valores en estado local propio y la hoja no sabe si hay cambios.
 - **Pasos.** (1) Pulsar "Agregar". (2) Escribir nombre y cantidad. (3) Tocar el fondo oscuro o pulsar Escape. (4) La hoja cierra y los datos desaparecen.
 - **Lo que sí funciona:** foco atrapado con Tab/Shift+Tab, Escape cierra, el foco vuelve al botón que abrió la hoja (cubierto por `e2e-fase3` y `e2e-fase4`, que pasan).
-- **Fix / Re-prueba:** pendiente.
+- **Fix.** Los formularios (`FormularioIngrediente`, `FormularioUso`) avisan con `onCambios(sucio)` si hay algo distinto de lo inicial. `Despensa.tsx` guarda eso en `sucioRef`: `solicitarCierre()` (Escape, fondo, X y "Cancelar") cierra directo si no hay cambios y, si los hay, muestra el nuevo `ConfirmarDescarte` ("¿Descartar lo escrito?" con "Seguir editando" y "Descartar") dentro de la hoja; un segundo Escape equivale a "Seguir editando". Guardar con éxito y "Descartar" usan `cerrarYa()`, que no pregunta. La `clave` de la hoja incluye el estado de confirmación, así el foco va a "Seguir editando" al aparecer y vuelve al primer campo al seguir editando. Sigue sin `confirm()` del navegador.\n- **Tests nuevos (fallan sin el fix).** `scripts/e2e-fase5.mjs` sección AC-4 (20 comprobaciones): sin cambios Escape cierra directo; con cambios, por Escape, fondo y X: aparece la confirmación y la hoja sigue abierta, el foco queda en "Seguir editando", seguir editando conserva lo escrito y devuelve el foco a un campo, "Descartar" cierra y no guarda; y la misma confirmación en "Usé". Antes del fix: FALLA ya en la primera comprobación con cambios (la hoja cerraba).\n- **Re-prueba.** Con el fix: 20/20 OK. Dos comprobaciones antiguas de `e2e-fase3` asumían que Escape con texto escrito cierra de inmediato (comportamiento que este hallazgo cambia a propósito); se actualizaron para pulsar "Descartar". `npm test` 422/422; `e2e-fase2`, `e2e-fase3` y `e2e-fase4` en TODO OK.
 
 ### AC-5 · Baja · Un registro inválido descarta todo
 

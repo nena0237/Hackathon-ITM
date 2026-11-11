@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { ConfirmarBorrado } from '../components/ConfirmarBorrado'
+import { ConfirmarDescarte } from '../components/ConfirmarDescarte'
 import { FilaTiempo } from '../components/FilaTiempo'
 import { FormularioIngrediente } from '../components/FormularioIngrediente'
 import { FormularioUso } from '../components/FormularioUso'
@@ -61,17 +62,39 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
 
   // Se activa al pedir el cierre: ignora cualquier segundo envío mientras la hoja sale (AC-1).
   const cerrandoRef = useRef(false)
+  // Cambios sin guardar en el formulario abierto y confirmación "¿Descartar lo escrito?" (AC-4).
+  const sucioRef = useRef(false)
+  const [descartando, setDescartando] = useState(false)
+  const marcarSucio = (sucio: boolean) => {
+    sucioRef.current = sucio
+  }
   const abrir = (vista: Vista, abridor: HTMLElement | null, copia?: Ingrediente) => {
     cerrandoRef.current = false
+    sucioRef.current = false
+    setDescartando(false)
     setCerrando(false)
     setHoja({ vista, abridor, copia })
   }
-  const cambiarVista = (vista: Vista) => setHoja((h) => (h ? { ...h, vista } : h))
-  const solicitarCierre = () => {
+  const cambiarVista = (vista: Vista) => {
+    sucioRef.current = false
+    setDescartando(false)
+    setHoja((h) => (h ? { ...h, vista } : h))
+  }
+  /** Cierra sin preguntar (guardado exitoso o "Descartar"). */
+  const cerrarYa = () => {
     cerrandoRef.current = true
+    setDescartando(false)
     setCerrando(true)
   }
+  /** Escape, fondo, X y "Cancelar": con cambios piden confirmación; sin cambios cierran directo. */
+  const solicitarCierre = () => {
+    if (cerrandoRef.current) return
+    if (!sucioRef.current) return cerrarYa()
+    setDescartando((d) => !d) // un segundo Escape equivale a "Seguir editando"
+  }
   const alCerrar = () => {
+    sucioRef.current = false
+    setDescartando(false)
     setHoja(null)
     setCerrando(false)
   }
@@ -100,12 +123,13 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             titulo="Agregar ingrediente"
             textoBoton="Guardar"
             onCancelar={solicitarCierre}
+            onCambios={marcarSucio}
             onGuardar={(entrada) => {
               if (cerrandoRef.current) return null
               const r = acciones.agregar(entrada)
               if (!r.ok) return r.errores
               avisar('Ingrediente guardado.')
-              solicitarCierre()
+              cerrarYa()
               return null
             }}
           />
@@ -142,12 +166,13 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             textoBoton="Guardar cambios"
             inicial={{ nombre: i.nombre, cantidad: cantidadATexto(i.cantidad), unidad: i.unidad, vence: i.vence }}
             onCancelar={solicitarCierre}
+            onCambios={marcarSucio}
             onGuardar={(entrada) => {
               if (cerrandoRef.current) return null
               const r = acciones.editar(i.id, entrada)
               if (!r.ok) return r.errores
               avisar('Cambios guardados.')
-              solicitarCierre()
+              cerrarYa()
               return null
             }}
           />
@@ -162,12 +187,13 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
           <FormularioUso
             ingrediente={i}
             onCancelar={solicitarCierre}
+            onCambios={marcarSucio}
             onUsar={(cantidad) => {
               if (cerrandoRef.current) return null
               const r = acciones.usar(i.id, cantidad)
               if (!r.ok) return r.error
               avisar(r.eliminado ? `Usaste todo: ${nombre} salió de la despensa.` : 'Cantidad descontada.')
-              solicitarCierre()
+              cerrarYa()
               return null
             }}
           />
@@ -185,7 +211,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             if (cerrandoRef.current) return
             acciones.borrar(i.id)
             avisar(`${nombre} borrado.`)
-            solicitarCierre()
+            cerrarYa()
           }}
         />
       ),
@@ -200,12 +226,13 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
         titulo={c.titulo}
         etiqueta={c.etiqueta}
         rol={c.rol}
-        clave={vistaActual ? `${vistaActual.tipo}-${'id' in vistaActual ? vistaActual.id : ''}` : ''}
+        clave={`${vistaActual ? `${vistaActual.tipo}-${'id' in vistaActual ? vistaActual.id : ''}` : ''}${descartando ? '-descartar' : ''}`}
         cerrando={cerrando}
         abridor={hoja.abridor}
         onSolicitarCierre={solicitarCierre}
         onCerrado={alCerrar}
       >
+        {descartando && <ConfirmarDescarte onSeguir={() => setDescartando(false)} onDescartar={cerrarYa} />}
         {c.cuerpo}
       </Hoja>
     ) : null

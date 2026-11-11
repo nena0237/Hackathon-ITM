@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { capitalizarNombre } from '../domain/formato'
 import { formatearCantidad } from '../domain/presentacion'
 import type { Ingrediente } from '../domain/tipos'
@@ -8,12 +8,16 @@ interface Props {
   /** Devuelve null si se descontó, o el mensaje de error. */
   onUsar: (cantidad: string) => string | null
   onCancelar: () => void
+  /** Avisa si hay una cantidad escrita sin enviar. */
+  onCambios?: (sucio: boolean) => void
 }
 
-export function FormularioUso({ ingrediente, onUsar, onCancelar }: Props) {
+export function FormularioUso({ ingrediente, onUsar, onCancelar, onCambios }: Props) {
   const uid = useId()
   const [valor, setValor] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const sucio = valor !== ''
+  useEffect(() => onCambios?.(sucio), [sucio]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const enviar = (e: FormEvent) => {
     e.preventDefault()

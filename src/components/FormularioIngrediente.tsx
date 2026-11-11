@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { UNIDADES, type ErroresFormulario, type IngredienteEntrada } from '../domain/tipos'
 
 interface Props {
@@ -8,13 +8,18 @@ interface Props {
   /** Devuelve null si se guardó, o los errores por campo. */
   onGuardar: (entrada: IngredienteEntrada) => ErroresFormulario | null
   onCancelar: () => void
+  /** Avisa si hay cambios sin guardar (para pedir confirmación al cerrar la hoja). */
+  onCambios?: (sucio: boolean) => void
 }
 
 type Campo = 'nombre' | 'cantidad' | 'unidad' | 'vence'
 
-export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, onCancelar }: Props) {
+export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, onCancelar, onCambios }: Props) {
   const uid = useId()
-  const [valores, setValores] = useState(inicial ?? { nombre: '', cantidad: '', unidad: 'unidad', vence: '' })
+  const [valoresIniciales] = useState(() => inicial ?? { nombre: '', cantidad: '', unidad: 'unidad', vence: '' })
+  const [valores, setValores] = useState(valoresIniciales)
+  const sucio = (Object.keys(valoresIniciales) as Campo[]).some((c) => valores[c] !== valoresIniciales[c])
+  useEffect(() => onCambios?.(sucio), [sucio]) // eslint-disable-line react-hooks/exhaustive-deps
   const [errores, setErrores] = useState<ErroresFormulario>({})
   const refs = useRef<Partial<Record<Campo, HTMLInputElement | HTMLSelectElement | null>>>({})
 
