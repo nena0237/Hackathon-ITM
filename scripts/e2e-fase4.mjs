@@ -271,7 +271,7 @@ ok(trans === '0.1s transform', 'La compresión dura 100 ms y solo anima transfor
 await IR(page, 'Recetas')
 await page.waitForSelector('[data-testid=lista-cocinables]')
 const rec = await page.evaluate(() => {
-  const c = document.querySelector('[data-receta="Huevos pericos"]'); const p = document.querySelector('[data-receta="Arroz con leche"]')
+  const c = document.querySelector('[data-receta="Huevos pericos gratinados con queso"]'); const p = document.querySelector('[data-receta="Mazamorra cremosa de maíz y queso"]')
   const mini = c.querySelector('ol[aria-label]')
   return {
     cocinable: getComputedStyle(c).backgroundColor, ancho: Math.round(c.getBoundingClientRect().width), vista: document.documentElement.clientWidth,
@@ -283,10 +283,10 @@ const rec = await page.evaluate(() => {
 ok(rec.cocinable === 'rgb(191, 220, 74)', 'Receta cocinable = bloque lima', rec.cocinable)
 ok(rec.ancho >= rec.vista - 1, 'El bloque de receta es de todo el ancho de la pantalla', `${rec.ancho}/${rec.vista}`)
 ok(/repeating-linear-gradient/.test(rec.parcial), '"No alcanza" = gris rayado', rec.parcial)
-ok(JSON.stringify(rec.miniItems) === JSON.stringify(['Huevos · En 2 días', 'Tomate · Mañana']), '"Aprovecha lo que vence" usa la línea de tiempo en pequeño', JSON.stringify(rec.miniItems))
+ok(JSON.stringify(rec.miniItems) === JSON.stringify(['Huevos · En 2 días', 'Tomate · Mañana', 'Queso · En 3 días']), '"Aprovecha lo que vence" usa la línea de tiempo en pequeño', JSON.stringify(rec.miniItems))
 ok(rec.detallesAbierto === false && rec.resumenDetalle === 'Ver ingredientes y preparación', 'La preparación está plegada tras "Ver ingredientes y preparación"', JSON.stringify(rec))
 ok(rec.titulos[0].startsWith('Puedes cocinar ahora') && rec.titulos[1].startsWith('No alcanza'), 'Secciones: "Puedes cocinar ahora" y "No alcanza"', rec.titulos.join(' | '))
-const faltaMotivo = await page.$eval('[data-receta="Arroz con leche"]', (e) => ({ n: e.querySelectorAll('[data-motivo]').length, t: e.querySelector('[data-motivo]').textContent }))
+const faltaMotivo = await page.$eval('[data-receta="Mazamorra cremosa de maíz y queso"]', (e) => ({ n: e.querySelectorAll('[data-motivo]').length, t: e.querySelector('[data-motivo]').textContent }))
 ok(faltaMotivo.n === 1 && /vencido/.test(faltaMotivo.t), '"No alcanza" lista el faltante con su motivo', JSON.stringify(faltaMotivo))
 ok((await page.evaluate(() => document.documentElement.scrollWidth)) <= 360, 'Recetas: sin scroll horizontal a 360 px')
 ok((await botonesChicos(page)).length === 0 && (await page.$$eval('summary', (s) => s.every((x) => x.getBoundingClientRect().height >= 44))), 'Recetas: botones y "Ver ingredientes" de al menos 44 px')

@@ -16,7 +16,7 @@ npm test         # 3. (opcional) corre las pruebas
 
 Otros comandos: `npm run build` (compila para producción) y `npm run preview` (sirve la compilación).
 
-Al abrir por primera vez se cargan **datos de ejemplo** con fechas relativas a hoy. Demo sugerida: en *Recetas*, "Huevos pericos" aprovecha el tomate (mañana) y los huevos (en 2 días); "Arroz con leche" queda en "No alcanza" porque la leche está vencida.
+Al abrir por primera vez se cargan **datos de ejemplo** con fechas relativas a hoy. Demo sugerida: en *Recetas*, "Huevos pericos gratinados con queso" aprovecha el tomate (mañana), los huevos (en 2 días) y el queso (en 3 días); "Mazamorra cremosa de maíz y queso" queda en "No alcanza" porque la leche está vencida. Con el seed hay 5 cocinables y 17 que no alcanzan.
 
 ## Requisito → dónde está en la app
 
@@ -29,7 +29,7 @@ Al abrir por primera vez se cargan **datos de ejemplo** con fechas relativas a h
 | **R5** | Sugerir recetas con los ingredientes disponibles | Pestaña **Recetas**, sección **Puedes cocinar ahora** (bloques lima), primero las que más ingredientes por vencer aprovechan; **Aprovecha lo que vence** usa la misma línea de tiempo en pequeño. | `sugerirRecetas` en `src/domain/recetas.ts`, `src/pages/Recetas.tsx`, `src/components/BloqueReceta.tsx` |
 | **R6** | Identificar los ingredientes faltantes | Pestaña **Recetas**, sección **No alcanza** (bloques gris rayado): **Qué te falta** lista cada faltante con cantidad y motivo (no tienes, no alcanza, vencido o unidad incompatible). | `Faltante` / `describirFaltante` en `src/domain/` |
 | **R7** | Los datos persisten al recargar | Automático en cada cambio (agregar, editar, usé, borrar): se guarda en `localStorage`, clave `foodsaver:v1`. Si los datos están dañados la app avisa, carga los ejemplos y guarda una copia. Si borras todo, la despensa queda vacía con el botón **Cargar datos de ejemplo**. | `src/storage/almacen.ts`, `src/domain/persistencia.ts`, `src/hooks/useDespensa.ts` |
-| **R8** | Colección de recetas predefinida | Pestaña **Recetas**: 12 recetas caseras colombianas; **Ver ingredientes y preparación** despliega ingredientes e instrucciones. | `src/data/recetas.ts` |
+| **R8** | Colección de recetas predefinida | Pestaña **Recetas**: 22 recetas con raíz colombiana (JSON local, sin API); **Ver ingredientes y preparación** despliega ingredientes e instrucciones. | `src/data/recetas.ts` |
 
 ## Diseño
 

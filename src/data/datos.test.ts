@@ -5,7 +5,7 @@ import { crearSeed } from './seed'
 
 const HOY = '2026-03-15'
 const sugerencias = (hoy = HOY) => sugerirRecetas(RECETAS, crearSeed(hoy), hoy)
-const de = (nombre: string, hoy = HOY) => sugerencias(hoy).find((s) => s.receta.nombre === nombre)!
+const de = (id: string, hoy = HOY) => sugerencias(hoy).find((s) => s.receta.id === id)!
 
 describe('seed (tabla del brief, fechas relativas)', () => {
   it('tiene los 9 ingredientes con los días relativos exactos', () => {
@@ -47,95 +47,135 @@ describe('seed (tabla del brief, fechas relativas)', () => {
   })
 })
 
-describe('colección de recetas (R8)', () => {
-  it('son 12, con los nombres del brief y ids únicos', () => {
-    expect(RECETAS.map((r) => r.nombre).sort()).toEqual(
-      [
-        'Huevos pericos', 'Arepas con queso', 'Arroz con huevo', 'Sopa de tomate', 'Omelette de queso',
-        'Arroz con pollo', 'Sudado de pollo', 'Ensalada de tomate y cebolla', 'Arroz con leche',
-        'Papas con queso', 'Huevos rancheros', 'Sándwich gratinado',
-      ].sort(),
-    )
-    expect(new Set(RECETAS.map((r) => r.id)).size).toBe(12)
+describe('colección de recetas (R8): validez de cada receta', () => {
+  const UNIDADES_OK = ['g', 'kg', 'ml', 'l', 'unidad']
+
+  it('son 22, con ids y nombres únicos (el id es kebab-case)', () => {
+    expect(RECETAS).toHaveLength(22)
+    expect(new Set(RECETAS.map((r) => r.id)).size).toBe(22)
+    expect(new Set(RECETAS.map((r) => r.nombre)).size).toBe(22)
+    for (const r of RECETAS) expect(r.id, r.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/)
   })
 
-  it('ingredientes en minúscula, cantidades válidas y sin ingredientes repetidos en una receta', () => {
-    for (const r of RECETAS) {
-      expect(r.ingredientes.length).toBeGreaterThan(0)
-      const nombres = r.ingredientes.map((i) => i.nombre)
-      for (const n of nombres) expect(n).toBe(n.toLowerCase())
-      expect(new Set(nombres.map(normalizarNombre)).size).toBe(nombres.length)
-      for (const i of r.ingredientes) expect(i.cantidad).toBeGreaterThan(0)
-    }
+  it('ids renombrados: "arroz-con-leche" ya no existe y "mazamorra-cremosa" sí; "huevos-pericos" se conserva', () => {
+    const ids = RECETAS.map((r) => r.id)
+    expect(ids).not.toContain('arroz-con-leche')
+    expect(ids).toContain('mazamorra-cremosa')
+    expect(ids).toContain('huevos-pericos')
   })
 
-  it('instrucciones de 2 a 4 líneas', () => {
-    for (const r of RECETAS) {
-      const lineas = r.instrucciones.split('\n').filter((l) => l.trim() !== '')
-      expect(lineas.length, r.nombre).toBeGreaterThanOrEqual(2)
-      expect(lineas.length, r.nombre).toBeLessThanOrEqual(4)
-    }
-  })
+  for (const r of RECETAS) {
+    describe(r.id, () => {
+      it('tiene nombre y de 1 a 7 ingredientes, sin repetir ninguno', () => {
+        expect(r.nombre.trim()).not.toBe('')
+        expect(r.ingredientes.length).toBeGreaterThanOrEqual(1)
+        expect(r.ingredientes.length).toBeLessThanOrEqual(7)
+        const normalizados = r.ingredientes.map((i) => normalizarNombre(i.nombre))
+        expect(new Set(normalizados).size).toBe(normalizados.length)
+      })
 
-  it('mezcla de unidades: g, kg, l y unidad', () => {
+      it('ingredientes en minúscula y ya normalizados (sin espacios extra)', () => {
+        for (const i of r.ingredientes) {
+          expect(i.nombre, i.nombre).toBe(i.nombre.toLowerCase())
+          expect(i.nombre, i.nombre).toBe(i.nombre.trim().replace(/\s+/g, ' '))
+          expect(i.nombre.length, i.nombre).toBeGreaterThan(0)
+        }
+      })
+
+      it('unidades dentro de g, kg, ml, l y unidad', () => {
+        for (const i of r.ingredientes) expect(UNIDADES_OK, `${i.nombre}: ${i.unidad}`).toContain(i.unidad)
+      })
+
+      it('cantidades finitas y mayores que 0', () => {
+        for (const i of r.ingredientes) {
+          expect(Number.isFinite(i.cantidad), i.nombre).toBe(true)
+          expect(i.cantidad, i.nombre).toBeGreaterThan(0)
+        }
+      })
+
+      it('instrucciones de 2 a 4 líneas, ninguna vacía', () => {
+        const lineas = r.instrucciones.split('\n')
+        expect(lineas.length).toBeGreaterThanOrEqual(2)
+        expect(lineas.length).toBeLessThanOrEqual(4)
+        for (const l of lineas) expect(l.trim()).not.toBe('')
+      })
+    })
+  }
+
+  it('la colección usa las 5 unidades', () => {
     const unidades = new Set(RECETAS.flatMap((r) => r.ingredientes.map((i) => i.unidad)))
-    expect([...unidades].sort()).toEqual(['g', 'kg', 'l', 'unidad'])
+    expect([...unidades].sort()).toEqual(['g', 'kg', 'l', 'ml', 'unidad'])
   })
 })
 
-describe('demo: seed + recetas + dominio', () => {
-  it('al menos 3 cocinables', () => {
-    expect(sugerencias().filter((s) => s.estado === 'cocinable').length).toBeGreaterThanOrEqual(3)
+describe('demo: seed + recetas + dominio (fecha fija 2026-03-15)', () => {
+  const IDS_COCINABLES = ['arroz-meloso-pollo-huevo', 'bunuelos-horno', 'huevos-pericos', 'pollo-costra-maiz-queso', 'tacos-arepa-pollo-hogao']
+  const IDS_UN_FALTANTE = ['mazamorra-cremosa', 'pollo-maracuya', 'tortilla-papa-criolla']
+
+  it('5 cocinables y 17 parciales (conteo real con el seed)', () => {
+    const s = sugerencias()
+    expect(s.filter((x) => x.estado === 'cocinable').map((x) => x.receta.id).sort()).toEqual(IDS_COCINABLES)
+    expect(s.filter((x) => x.estado === 'parcial')).toHaveLength(17)
   })
 
-  it('al menos 2 parciales con exactamente 1 faltante', () => {
-    const unaFalta = sugerencias().filter((s) => s.estado === 'parcial' && s.faltantes.length === 1)
-    expect(unaFalta.length).toBeGreaterThanOrEqual(2)
+  it('exactamente 3 parciales con un solo faltante: tortilla (no-hay), pollo-maracuyá (no-hay) y mazamorra (vencido)', () => {
+    const unaFalta = sugerencias().filter((x) => x.estado === 'parcial' && x.faltantes.length === 1)
+    expect(unaFalta.map((x) => x.receta.id).sort()).toEqual(IDS_UN_FALTANTE)
+    const motivo = (id: string) => unaFalta.find((x) => x.receta.id === id)!.faltantes[0]
+    expect(motivo('tortilla-papa-criolla')).toMatchObject({ nombre: 'papa criolla', motivo: 'no-hay' })
+    expect(motivo('pollo-maracuya')).toMatchObject({ nombre: 'maracuyá', motivo: 'no-hay' })
+    expect(motivo('mazamorra-cremosa')).toMatchObject({ nombre: 'leche', motivo: 'vencido', falta: 500 })
   })
 
-  it('Huevos pericos es cocinable y aprovecha tomate (mañana) y huevos (en 2 días)', () => {
-    const s = de('Huevos pericos')
+  it('Huevos pericos gratinados es cocinable y aprovecha huevos (2 días), tomate (1 día) y queso (3 días)', () => {
+    const s = de('huevos-pericos')
     expect(s.estado).toBe('cocinable')
-    // Mismo orden en que la receta lista sus ingredientes (huevos, tomate, cebolla).
+    // Mismo orden en que la receta lista sus ingredientes (huevos, tomate, cebolla, queso).
     expect(s.aprovecha).toEqual([
       { nombre: 'huevos', dias: 2 },
       { nombre: 'tomate', dias: 1 },
+      { nombre: 'queso', dias: 3 },
     ])
-    expect(s.urgencia).toBe(2)
+    expect(s.urgencia).toBe(3)
   })
 
-  it('Arroz con leche NO es cocinable por la leche vencida (y el arroz sí alcanza)', () => {
-    const s = de('Arroz con leche')
+  it('la mazamorra (antes "arroz con leche") NO es cocinable por la leche vencida; lo demás sí alcanza', () => {
+    const s = de('mazamorra-cremosa')
     expect(s.estado).toBe('parcial')
     expect(s.faltantes).toHaveLength(1)
-    expect(s.faltantes[0]).toMatchObject({ nombre: 'leche', motivo: 'vencido', falta: 1 })
+    expect(s.faltantes[0]).toMatchObject({ nombre: 'leche', motivo: 'vencido' })
   })
 
-  it('la conversión kg↔g funciona con datos reales: Arepas (0,5 kg) con 1 kg de harina alcanza', () => {
-    expect(de('Arepas con queso').estado).toBe('cocinable')
+  it('ninguna receta usa el lote vencido de arroz ni la leche vencida: sin ellos el arroz alcanza justo (500 g vigentes)', () => {
+    // arroz meloso pide 300 g: alcanza con el lote vigente; pollo-maracuya pide 200 g de arroz y solo le falta la maracuyá.
+    expect(de('arroz-meloso-pollo-huevo').estado).toBe('cocinable')
+    expect(de('pollo-maracuya').faltantes.map((f) => f.nombre)).toEqual(['maracuyá'])
   })
 
-  it('el lote vencido de arroz no suma: Arroz con pollo usa solo los 500 g vigentes', () => {
-    expect(de('Arroz con pollo').estado).toBe('cocinable')
+  it('la conversión kg↔g con datos reales: tacos de arepa (250 g de harina) con 1 kg alcanza', () => {
+    expect(de('tacos-arepa-pollo-hogao').estado).toBe('cocinable')
   })
 
-  it('Huevos pericos es la primera sugerencia (cocinable con más urgencia)', () => {
-    expect(sugerencias()[0].receta.nombre).toBe('Huevos pericos')
+  it('la primera sugerencia es la cocinable con más urgencia: pollo en costra (urgencia 4), no los pericos', () => {
+    const s = sugerencias()
+    expect(s[0].receta.id).toBe('pollo-costra-maiz-queso')
+    expect(s[0].urgencia).toBe(4)
+    expect(s.slice(0, 5).every((x) => x.estado === 'cocinable')).toBe(true)
+    expect(s.slice(0, 5).map((x) => x.receta.id).sort()).toEqual(IDS_COCINABLES)
   })
 
-  it('cambio de día: tres días después la leche sigue vencida y los huevos y el tomate también', () => {
-    // El seed se calculó para HOY; si el usuario abre la app 3 días después con los mismos datos:
+  it('cambio de día: tres días después tomate y huevos vencieron y los pericos pasan a parcial', () => {
     const seed = crearSeed(HOY)
     const despues = sugerirRecetas(RECETAS, seed, '2026-03-18')
-    const pericos = despues.find((s) => s.receta.nombre === 'Huevos pericos')!
-    expect(pericos.estado).toBe('parcial') // tomate (venció 03-16) y huevos (03-17) ya vencieron
-    expect(pericos.faltantes.map((f) => f.nombre).sort()).toEqual(['huevos', 'tomate'])
+    const pericos = despues.find((s) => s.receta.id === 'huevos-pericos')!
+    expect(pericos.estado).toBe('parcial')
+    expect(pericos.faltantes.map((f) => f.nombre).sort()).toEqual(['huevos', 'tomate']) // el queso vence ese día: NO vencido (borde)
     expect(pericos.faltantes.every((f) => f.motivo === 'vencido')).toBe(true)
   })
 
-  it('con despensa vacía las 12 recetas son parciales con todo faltante', () => {
+  it('con despensa vacía las 22 recetas son parciales con todo faltante', () => {
     const r = sugerirRecetas(RECETAS, [], HOY)
-    expect(r).toHaveLength(12)
+    expect(r).toHaveLength(22)
     for (const s of r) {
       expect(s.estado).toBe('parcial')
       expect(s.faltantes.length).toBe(s.receta.ingredientes.length)

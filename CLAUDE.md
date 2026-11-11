@@ -6,7 +6,7 @@ Fuente: `BRIEF.md` (sección `<contexto_para_agente>`). Este archivo es el conte
 
 Reto 2 de Prompt & Solve: **aprovechar los ingredientes antes de que venzan**. La app ayuda a un hogar a priorizar qué ingredientes usar y a elegir comidas que reduzcan el desperdicio. Debe ser una aplicación funcional que **conserve los datos al recargar**. Se permiten datos de ejemplo y almacenamiento local; login, integraciones externas e IA dentro de la app son opcionales (aquí: no se usan). Se evalúan el producto (50 %) y el proceso con el agente (50 %): CONTEXT.md, PLAN.md y VERIFICATION.md son parte del entregable.
 
-Demo objetivo: registrar varios ingredientes con distintas fechas y encontrar una receta que aproveche uno próximo a vencer. Con el seed, "Huevos pericos" aprovecha tomate (vence mañana) y huevos (en 2 días); "Arroz con leche" NO aparece como cocinable porque la leche está vencida.
+Demo objetivo: registrar varios ingredientes con distintas fechas y encontrar una receta que aproveche uno próximo a vencer. Con el seed, "Huevos pericos gratinados con queso" aprovecha tomate (vence mañana), huevos (en 2 días) y queso (en 3 días); "Mazamorra cremosa de maíz y queso" NO aparece como cocinable porque la leche está vencida.
 
 ## Requisitos
 
@@ -29,7 +29,7 @@ Demo objetivo: registrar varios ingredientes con distintas fechas y encontrar un
 - **Unidades**: `g`, `kg`, `ml`, `l`, `unidad`. Solo se convierte g↔kg y ml↔l. Unidades incompatibles (g vs ml, g vs unidad) no se convierten: cuentan como faltante.
 - **Sugerencias**: cada receta es `cocinable` (todo alcanza, sin vencidos) o `parcial` (se listan faltantes y cuánto falta). Una receta NUNCA usa ingredientes vencidos.
 - **Ranking**: cocinables primero; dentro de cada grupo, más "urgencia aprovechada" (ingredientes que vencen en ≤3 días y que usa la receta); desempate por menos faltantes y luego nombre. Cada receta muestra qué ingredientes por vencer aprovecha.
-- **Recetas**: 12 recetas colombianas/caseras en español, ingredientes en minúscula, mezcla de unidades, instrucciones de 2 a 4 líneas. Con el seed: ≥3 cocinables, ≥2 parciales con 1 faltante, y una que dependa del ingrediente vencido (para demostrar la exclusión).
+- **Recetas**: 22 recetas con raíz colombiana en español (colección local en `src/data/recetas.ts`, no API), ingredientes en minúscula, mezcla de unidades, instrucciones de 2 a 4 líneas. Con el seed: 5 cocinables, 3 parciales con 1 solo faltante (tortilla-papa-criolla, pollo-maracuya, mazamorra-cremosa) y una que dependa del ingrediente vencido (para demostrar la exclusión).
 - **Decisiones que resuelven ambigüedades del brief (Fase 1)**:
   - Cantidad: se acepta `"2,5"` y se interpreta como 2.5. Se rechaza vacío, 0, negativo, NaN, texto e Infinity. **Máximo 100000**: `1e9` se rechaza con mensaje claro. `0.0001` se acepta.
   - Nombre: obligatorio, **máximo 60 caracteres**; 200 caracteres se rechazan con mensaje claro.

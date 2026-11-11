@@ -180,7 +180,7 @@ ok(/2,5 unidades/.test(await texto(page.locator('li[data-id="seed-tomate"]'))) &
 
 // editar un vencido para volverlo vigente (Leche +10 días) y ver que las recetas reaccionan
 await irA('Recetas')
-ok((await page.getAttribute('[data-receta="Arroz con leche"]', 'data-estado')) === 'parcial', 'Antes: Arroz con leche es parcial (leche vencida)')
+ok((await page.getAttribute('[data-receta="Mazamorra cremosa de maíz y queso"]', 'data-estado')) === 'parcial', 'Antes: La mazamorra es parcial (leche vencida)')
 await irA('Despensa')
 await accion('seed-leche', 'Editar', 'Leche')
 fe = page.getByRole('form', { name: 'Editar Leche' })
@@ -191,7 +191,7 @@ ok((await page.locator('[data-testid=lista-con-tiempo] li[data-nombre="Leche"]')
 await recargar()
 ok((await page.locator('[data-testid=lista-con-tiempo] li[data-nombre="Leche"]').count()) === 1, 'RECARGA: Leche sigue en "Con tiempo"')
 await irA('Recetas')
-ok((await page.getAttribute('[data-receta="Arroz con leche"]', 'data-estado')) === 'cocinable', 'Después: Arroz con leche ya es cocinable (las recetas reaccionan)')
+ok((await page.getAttribute('[data-receta="Mazamorra cremosa de maíz y queso"]', 'data-estado')) === 'cocinable', 'Después: La mazamorra ya es cocinable (las recetas reaccionan)')
 await irA('Despensa')
 
 // Escape durante la edición: cierra sin guardar y devuelve el foco
@@ -231,7 +231,7 @@ ok(await page.evaluate(() => document.activeElement?.id === 'contenido-principal
 await recargar()
 ok((await cuantas('Huevos')) === 0, 'RECARGA: el lote agotado no vuelve')
 await irA('Recetas')
-ok((await page.getAttribute('[data-receta="Huevos pericos"]', 'data-estado')) === 'parcial', 'Sin huevos, Huevos pericos pasa a parcial')
+ok((await page.getAttribute('[data-receta="Huevos pericos gratinados con queso"]', 'data-estado')) === 'parcial', 'Sin huevos, Huevos pericos pasa a parcial')
 await irA('Despensa')
 
 // ───────── 6. BORRAR con confirmación propia ─────────
@@ -264,7 +264,7 @@ await page.screenshot({ path: `${SHOTS}/f3-vacio-360.png` })
 await recargar()
 ok(await page.locator('[data-testid=estado-vacio]').isVisible(), 'RECARGA: la despensa vacía persiste (no vuelve el seed)')
 await irA('Recetas')
-ok((await page.locator('[data-testid=lista-parciales] > li').count()) === 12 && (await page.locator('[data-testid=lista-cocinables]').count()) === 0, 'Recetas con despensa vacía: 12 "No alcanza", 0 cocinables')
+ok((await page.locator('[data-testid=lista-parciales] > li').count()) === 22 && (await page.locator('[data-testid=lista-cocinables]').count()) === 0, 'Recetas con despensa vacía: 22 "No alcanza", 0 cocinables')
 await irA('Despensa')
 
 // avanzar 10 días con la pestaña abierta; "cargar ejemplo" debe usar las fechas de ESE día, no las guardadas
