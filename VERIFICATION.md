@@ -68,3 +68,120 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - El chequeo de contraste medía el elemento equivocado (`span:last-child` agarraba la cantidad "1 l" y no el texto "Hace N días"), así que el par más justo nunca se medía y el "peor" salía 6,01. Lo detecté porque no cuadraba con el 4,60 de `DISENO.md`; se corrigió con `:scope >`.
 - Mis reemplazos con `String.replace` convirtieron `$$eval` en `$eval` (en JS `$$` dentro del texto de reemplazo significa `$`) y el shell se comió barras invertidas de dos regex. Se corrigieron con la herramienta de edición.
 - Tres comprobaciones eran frágiles (fechas con `textContent` sin espacios, sticky con una página demasiado corta para pasar el encabezado, aviso medido justo en el límite de 4,2 s) y se arreglaron para que prueben lo que dicen.
+
+## Auditoría cruzada (Fase 5, parte B)
+
+> **Limitación:** La auditoría la hizo el mismo agente que construyó, en sesión nueva y sin leer PLAN.md; la independencia es parcial.
+
+**Método.** Lectura de `src/domain`, `src/storage`, `src/hooks`, las hojas inferiores y las 22 recetas. Cada sospecha se reprodujo antes de registrarla: con tests desechables de Vitest sobre el dominio y con scripts de Playwright (Edge real, 360 px, reloj simulado en 2026-03-15) sobre la app en `localhost:5173`. Los scripts y tests desechables no se guardaron en el repositorio. No se corrigió nada. La columna "Fix / Re-prueba" queda pendiente para la corrección.
+
+### Resumen priorizado
+
+| # | Severidad | Hallazgo | Estado |
+|---|---|---|---|
+| AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Reproducido |
+| AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Reproducido |
+| AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Reproducido |
+| AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Reproducido |
+| AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Reproducido |
+| AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Reproducido |
+| AC-7 | Baja | Ids duplicados en el almacenamiento: la hoja abre otro ingrediente y borrar/editar afecta a ambos | Reproducido |
+| AC-8 | Baja | Precisión inconsistente: validación sin mínimo, redondeo a 9 decimales y texto a 4 | Reproducido |
+| AC-9 | Baja | Un nombre de solo caracteres invisibles (U+200B) se acepta | Reproducido |
+
+### AC-1 · Alta · Enter repetido ejecuta la acción dos veces
+
+- **Síntoma.** En "Usé Huevos" con 6 huevos, escribir 1 y pulsar Enter dos veces seguidas deja **4**, no 5. En "Agregar", llenar el formulario y pulsar Enter dos veces crea **2 lotes** de Yogur. Sin ningún aviso al usuario. En "Usé" el dato guardado queda mal en silencio.
+- **Causa raíz (investigada).** Al guardar con éxito, `Despensa.tsx` llama a `solicitarCierre()`, y `Hoja.tsx` mantiene montado el formulario durante la salida de 200 ms (`SALIDA_MS`). Lo único que bloquea la segunda acción es `pointer-events: none` en `.hoja[data-cerrando="true"]` (`src/index.css`), que frena el ratón y el toque pero no el teclado. `enviar` en `FormularioIngrediente.tsx` y `FormularioUso.tsx` no consulta ningún estado "ya enviado", y `useDespensa` aplica cada llamada sobre el estado ya actualizado (por eso el segundo descuento parte de 5 y llega a 4).
+- **Pasos.** (1) Abrir la banda de Huevos, "Usé Huevos". (2) Escribir `1`. (3) Pulsar Enter dos veces rápido. (4) Ver `foodsaver:v1`: `seed-huevos` tiene `cantidad: 4`. Para "Agregar": llenar Yogur, 2, fecha futura y pulsar Enter dos veces: 11 registros en vez de 10.
+- **No probado:** doble toque con el dedo. Por el análisis del flujo (React vuelve a pintar la hoja con `data-cerrando` antes del segundo clic) no debería repetirse, pero no se reprodujo.
+- **Fix / Re-prueba:** pendiente.
+
+### AC-2 · Media · El singular o plural distinto no coincide con las recetas
+
+- **Síntoma.** Con "Huevo" (6) y "Tomates" (4) en la despensa, "Huevos pericos gratinados con queso" pasa a parcial y dice "Te falta huevos: necesitas 3 unidades y no tienes" y "Te falta tomate…", aunque la persona sí los tiene. Es lo esperable con cualquier variante natural ("Frijol", "Limones", "Papas criollas"); solo se reprodujo con huevo y tomates.
+- **Causa raíz (investigada).** `sugerirRecetas` y `cantidadDisponible` comparan `normalizarNombre(a) === normalizarNombre(b)`. La normalización solo quita mayúsculas, tildes y espacios (decisión del brief); no hay plurales ni sinónimos. Las recetas usan plural en `huevos`, `frijoles`, `garbanzos`, `lentejas`, `hongos` y singular en `tomate`, `cebolla`, `limón`. El formulario es texto libre sin sugerencias (`autoComplete="off"`), y el mensaje `no-hay` no distingue "no lo tienes" de "lo tienes con otro nombre".
+- **Pasos.** (1) Dejar en la despensa "Huevo" y "Tomates". (2) Ir a Recetas. (3) Abrir "Huevos pericos": estado parcial con 4 faltantes.
+- **Impacto en la demo:** si quien prueba agrega "Huevo" o "Tomates", el flujo principal (receta que aprovecha lo que vence) no aparece.
+- **Fix / Re-prueba:** pendiente. Es una decisión de dominio (documentarla en CONTEXT.md): lista de sugerencias con los nombres de las recetas y/o plegado simple de plurales.
+
+### AC-3 · Media · Dos pestañas se pisan
+
+- **Síntoma.** Con la app abierta en dos pestañas, A agrega "DesdeA" y luego B (sin recargar) agrega "DesdeB": en `foodsaver:v1` queda solo `DesdeB`. A sigue mostrando 10 registros que ya no están guardados.
+- **Causa raíz (investigada).** `useDespensa` copia el estado inicial una sola vez y, en cada acción, escribe la lista completa con `almacen.setItem`. No lee antes de escribir y no escucha el evento `storage` de `window`; gana la última escritura (R7 se cumple por pestaña, no entre pestañas).
+- **Pasos.** Abrir `localhost:5173` en dos pestañas del mismo perfil, agregar un ingrediente distinto en cada una sin recargar y revisar `localStorage`.
+- **Fix / Re-prueba:** pendiente.
+
+### AC-4 · Media · Cierre sin protección con datos sin guardar
+
+- **Síntoma.** Con "Agregar" a medio llenar, tocar el fondo (en 360 px el fondo ocupa toda la parte superior) o pulsar Escape cierra la hoja de inmediato y se pierde lo escrito, sin confirmación. Al volver a abrirla el formulario está vacío.
+- **Causa raíz (investigada).** `onSolicitarCierre` es `setCerrando(true)` sin condiciones, y `Hoja.tsx` lo conecta a Escape, al clic del fondo (`hoja-fondo`) y a la X. Los formularios guardan sus valores en estado local propio y la hoja no sabe si hay cambios.
+- **Pasos.** (1) Pulsar "Agregar". (2) Escribir nombre y cantidad. (3) Tocar el fondo oscuro o pulsar Escape. (4) La hoja cierra y los datos desaparecen.
+- **Lo que sí funciona:** foco atrapado con Tab/Shift+Tab, Escape cierra, el foco vuelve al botón que abrió la hoja (cubierto por `e2e-fase3` y `e2e-fase4`, que pasan).
+- **Fix / Re-prueba:** pendiente.
+
+### AC-5 · Baja · Un registro inválido descarta todo
+
+- **Síntoma.** Si en `foodsaver:v1` hay 3 ingredientes y uno tiene `cantidad: 100001`, la app muestra el seed de 9 registros más el aviso "Los datos guardados estaban dañados (Ingredientes con datos inválidos.)". Las Lentejas y el Aguacate válidos no aparecen y no hay forma de restaurarlos desde la interfaz.
+- **Causa raíz (investigada).** `leerDespensa` en `persistencia.ts` exige `ingredientes.every(ingredienteValido)`; basta uno malo para devolver `corrupto`. `almacen.cargarDespensa` entonces sobrescribe `foodsaver:v1` con el seed y solo conserva el texto original en `foodsaver:v1:respaldo`, una única copia que se sobrescribe en cada nueva lectura corrupta (esto último es por lectura del código, no se reprodujo).
+- **Por qué es Baja:** la app misma no puede producir un registro inválido (el formulario valida); solo ocurre con edición manual o si en el futuro se baja un límite.
+- **Pasos.** Guardar en `localStorage` la clave con tres registros, uno con `cantidad: 100001`, y recargar.
+- **Fix / Re-prueba:** pendiente. Opción: conservar los válidos y avisar de cuántos se descartaron.
+
+### AC-6 · Baja · "1.000" y "1,000" se aceptan como 1
+
+- **Síntoma.** Escribir `1.000` (mil, en la notación colombiana) guarda 1. Lo mismo con `1,000`. Se acepta sin aviso y la fila muestra "1 g".
+- **Causa raíz (investigada).** La expresión `NUMERO` en `validacion.ts` (`^[+-]?(\d+([.,]\d+)?|[.,]\d+)$`) acepta un solo separador, punto o coma, y lo trata siempre como decimal. La decisión de F1 ("2,5" = 2.5) no consideró el punto como separador de miles.
+- **Pasos.** Agregar un ingrediente con cantidad `1.000` y mirar el valor guardado.
+- **Fix / Re-prueba:** pendiente. Decisión de dominio: rechazar con mensaje cuando haya exactamente tres dígitos tras el separador, o documentar que el punto es decimal.
+- **Otras entradas probadas que se comportan bien:** `1.5.0`, `1e3`, `٣`, `0x10`, `5.`, `1 000`, `$5`, `2/3` se rechazan con mensaje claro; `+5`, ` 7 `, `.5` y `00012` se aceptan como 5, 7, 0,5 y 12 (razonable).
+
+### AC-7 · Baja · Ids duplicados en el almacenamiento
+
+- **Síntoma.** Con dos registros que comparten `id: "x"`, tocar la banda de "Aguacate" abre la hoja de **"Lentejas"** (comprobado en el navegador). En dominio, `eliminarIngrediente` con ese id borra los 2 y `actualizarIngrediente` renombra los 2.
+- **Causa raíz (investigada).** `ingredienteValido` no comprueba unicidad de ids; `Despensa.tsx` resuelve la hoja con `ingredientes.find((x) => x.id === vista.id)` (el primero), y las operaciones de `despensa.ts` filtran/mapean todos los que coinciden.
+- **Por qué es Baja:** la app genera ids con `crypto.randomUUID()`; solo ocurre con almacenamiento editado a mano.
+- **Fix / Re-prueba:** pendiente.
+
+### AC-8 · Baja · Precisión inconsistente entre validación, cálculo y texto
+
+- **Síntoma.** `formatearCantidad(249.99999, 'g')` da "250 g" y un faltante de `0.00001` se escribe "faltan 0 g" (puede leerse "tienes 250 g; faltan 0 g"). `formatearCantidad(0.00004, 'g')` da "0 g". Con un lote de 4e-10 g, "usar" 3e-10 devuelve `eliminado: true` aunque queden 1e-10.
+- **Causa raíz (investigada).** Tres precisiones distintas: `validarCantidad` acepta cualquier número > 0 (sin mínimo), `redondear` en `unidades.ts` trabaja a 9 decimales y `formatearNumero` en `presentacion.ts` redondea a 4.
+- **Por qué es Baja:** requiere cantidades absurdas (el brief pide que 0.0001 se acepte, y funciona). No se probó con una receta real que pida exactamente 250 g; se mostró con las funciones de dominio.
+- **Fix / Re-prueba:** pendiente.
+
+### AC-9 · Baja · Nombre invisible aceptado
+
+- **Síntoma.** `validarIngrediente` con nombre `"​"` (espacio de ancho cero) devuelve `ok: true`; la fila queda con un nombre que no se ve. Con `"  "` (espacio duro) sí se rechaza.
+- **Causa raíz (investigada).** `String.prototype.trim` elimina espacios Unicode pero no U+200B (ni otros caracteres de formato).
+- **Fix / Re-prueba:** pendiente.
+
+### Información (sin severidad)
+
+- Se acepta el año `0001`; el texto relativo dice "Hace 739000 días" sin separador de miles. Es coherente con "fecha pasada se acepta".
+- `normalizarNombre` no pliega formas de ancho completo ni ligaduras (`ﬁ`). Irrelevante para el uso real.
+
+### Lo que se probó y NO falló
+
+- **Fechas.** Vence hoy = no vencido (el pollo del seed queda en "Usar primero"); calendario propio sin `Date` (31 de febrero, bisiestos, `sumarDias`). Con el reloj simulado, el cambio de día **sin recargar** mueve los ingredientes de "Usar primero" a "Ya vencieron" (+2 días: Pollo y Tomate vencidos; +3 días: también Huevos; resumen "1 por vencer · 5 vencidos"), "Huevos pericos" pasa a parcial, y a medianoche (23:59:30 → 00:00:30) el pollo pasa a vencido.
+- **Lotes (caso 4).** Solo suman los vigentes (el lote de arroz vencido no entra); un ingrediente con solo lotes vencidos da el motivo `vencido`, no `no-hay`.
+- **Unidades (caso 5).** g↔kg y ml↔l correctos (`1.1 kg → 1100 g`, `100000 l → 100000000 ml`); g/unidad no se convierten. Revisión de las 22 recetas: todas usan unidades válidas y cada ingrediente aparece siempre con una sola unidad (por ejemplo `arroz` y `harina de maíz` solo en g, `leche` solo en ml), sin choques de familia con el seed.
+- **Ranking.** Desempate correcto (cocinables, urgencia, menos faltantes, nombre); tras la parte A el orden es Pericos, Pollo en costra, Tacos de arepa, Arroz meloso, Buñuelos.
+- **localStorage (caso 8).** 13 contenidos inválidos (no JSON, `null`, número, cadena, arreglo viejo, versión 0 y 2, sin `ingredientes`, `ingredientes: null`, cantidad como texto, 31 de febrero, unidad desconocida): siempre vuelve al seed, con aviso, con respaldo y sin errores de JavaScript. Lista vacía válida: muestra el estado vacío sin aviso. Un nombre con HTML se muestra como texto (React lo escapa).
+- **Cantidades (caso 1), nombres y fechas (casos 2 y 3):** cubiertos por la suite existente y confirmados en el navegador.
+
+### Tests que faltan (propuestos; no se agregaron para dejar este commit solo con VERIFICATION.md)
+
+| Test propuesto | Archivo | Hallazgo | Hoy |
+|---|---|---|---|
+| Un segundo envío durante la salida de la hoja no repite la acción (Enter dos veces en "Usé" y "Agregar") | e2e (Playwright) | AC-1 | falla |
+| `usarIngrediente` aplicado dos veces con la misma intención no descuenta doble (si se hace idempotente por envío) | `despensa.test.ts` / e2e | AC-1 | falla |
+| "Huevo" y "Tomates" cuentan para huevos/tomate; el mensaje distingue "lo tienes con otro nombre" | `recetas.test.ts`, `nombres` | AC-2 | falla |
+| Un cambio en `localStorage` desde otra pestaña (evento `storage`) se refleja y no se pierde | e2e con dos páginas | AC-3 | falla |
+| Cerrar con campos modificados pide confirmación; cerrar sin cambios no | e2e | AC-4 | falla |
+| `leerDespensa` conserva los registros válidos y cuenta los descartados | `persistencia.test.ts` | AC-5 | falla |
+| `validarCantidad("1.000")` según la decisión que se tome (rechazo o documentación) | `validacion.test.ts` | AC-6 | decisión |
+| `leerDespensa` rechaza ids duplicados | `persistencia.test.ts` | AC-7 | falla |
+| `describirFaltante` nunca escribe "faltan 0"; `usarIngrediente` no elimina con resto > 0 | `presentacion.test.ts`, `despensa.test.ts` | AC-8 | falla |
+| `validarIngrediente` rechaza `"​"` y otros caracteres invisibles | `validacion.test.ts` | AC-9 | falla |
+| Regresión de lo que sí funciona: cambio de día sin recargar y medianoche exacta | e2e | caso 9 | pasa (hoy solo se prueba cambiando `hoy`) |
