@@ -149,3 +149,29 @@ describe('hoyLocal (único uso del reloj)', () => {
   })
 })
 
+
+describe('AC-5: registros inválidos entre válidos', () => {
+  const malo = { id: 'b', nombre: 'Panela', cantidad: 100001, unidad: 'g', vence: '2026-06-01' }
+  const bueno = (id: string, nombre: string) => ({ id, nombre, cantidad: 1, unidad: 'unidad', vence: '2026-06-01' })
+
+  it('conserva los válidos, avisa cuántos descartó y guarda copia de los originales', () => {
+    const m = new Memoria()
+    const original = JSON.stringify({ version: 1, ingredientes: [bueno('a', 'Lentejas'), malo, bueno('c', 'Aguacate')] })
+    m.setItem(CLAVE, original)
+    const r = cargarDespensa(m, HOY)
+    expect(r.origen).toBe('guardado')
+    expect(r.ingredientes.map((i) => i.nombre)).toEqual(['Lentejas', 'Aguacate'])
+    expect(r.aviso).toMatch(/1 registro/)
+    expect(m.getItem(CLAVE_RESPALDO)).toBe(original)
+    // lo guardado ya está limpio: la siguiente carga no repite el aviso
+    const otra = cargarDespensa(m, HOY)
+    expect(otra.ingredientes.map((i) => i.nombre)).toEqual(['Lentejas', 'Aguacate'])
+    expect(otra.aviso).toBeNull()
+  })
+
+  it('con varios descartados el aviso va en plural', () => {
+    const m = new Memoria()
+    m.setItem(CLAVE, JSON.stringify({ version: 1, ingredientes: [bueno('a', 'Lentejas'), malo, { ...malo, id: 'z' }] }))
+    expect(cargarDespensa(m, HOY).aviso).toMatch(/2 registros/)
+  })
+})

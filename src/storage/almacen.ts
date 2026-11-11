@@ -62,8 +62,19 @@ export function cargarDespensa(almacen: Almacen | null, hoy: Fecha): CargaInicia
 
   const lectura = leerDespensa(texto)
   switch (lectura.estado) {
-    case 'ok':
-      return { ingredientes: lectura.ingredientes, aviso: null, origen: 'guardado' }
+    case 'ok': {
+      if (lectura.descartados === 0) return { ingredientes: lectura.ingredientes, aviso: null, origen: 'guardado' }
+      // Había registros inválidos: se guarda copia del original y lo guardado queda limpio (sin repetir el aviso).
+      try {
+        if (texto !== null) almacen.setItem(CLAVE_RESPALDO, texto)
+      } catch {
+        // sin respaldo: no es crítico
+      }
+      const n = lectura.descartados
+      const guardado = guardarDespensa(almacen, lectura.ingredientes)
+      const aviso = `Se descartaron ${n} ${n === 1 ? 'registro' : 'registros'} con datos inválidos y se conservaron los demás. Guardamos una copia de los originales.`
+      return { ingredientes: lectura.ingredientes, aviso: guardado ? aviso : `${aviso} ${SIN_GUARDADO}`, origen: 'guardado' }
+    }
     case 'vacio':
       return conSeed(null)
     case 'corrupto':

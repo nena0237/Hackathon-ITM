@@ -160,7 +160,7 @@ if (corre('AC-5')) {
   const nombres = await page.locator('li[data-nombre]').evaluateAll((l) => l.map((e) => e.dataset.nombre))
   ok(nombres.length === 2 && nombres.includes('Lentejas') && nombres.includes('Aguacate'), 'Quedan los 2 registros válidos (sin seed)', nombres.join(','))
   const aviso = (await page.locator('[role=alert]').first().textContent().catch(() => '')) ?? ''
-  ok(/1 registro/.test(aviso), 'El aviso dice cuántos se descartaron', aviso)
+  ok(/1 registro/.test(aviso), 'El aviso dice cuántos se descartaron', JSON.stringify(aviso))
   const respaldo = await page.evaluate(() => localStorage.getItem('foodsaver:v1:respaldo'))
   ok(!!respaldo && respaldo.includes('Panela'), 'Se guardó copia de los datos originales')
   await ctx.close()
