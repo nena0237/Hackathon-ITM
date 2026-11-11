@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { crearSeed } from '../data/seed'
 import { agregarValidado, editarValidado, eliminarIngrediente, usarIngrediente } from '../domain/despensa'
 import type { Fecha, Ingrediente, IngredienteEntrada, ResultadoDespensa, ResultadoUso } from '../domain/tipos'
 import { guardarDespensa, obtenerAlmacen, type CargaInicial } from '../storage/almacen'
 import { nuevoId } from '../storage/ids'
+import { escucharCambiosExternos } from '../storage/sincronizar'
 
 export interface AccionesDespensa {
   agregar: (entrada: IngredienteEntrada) => ResultadoDespensa
@@ -29,6 +30,9 @@ export function useDespensa(carga: CargaInicial, hoy: Fecha) {
     },
     [almacen],
   )
+
+  // Otra pestaña guardó: mostramos lo suyo en vez de pisarlo en la próxima acción (AC-3).
+  useEffect(() => escucharCambiosExternos(window, setIngredientes), [])
 
   const acciones: AccionesDespensa = {
     agregar: (entrada) => {

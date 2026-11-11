@@ -81,7 +81,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 |---|---|---|---|
 | AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Corregido |
 | AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Corregido |
-| AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Reproducido |
+| AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Corregido |
 | AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Reproducido |
 | AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Reproducido |
 | AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Reproducido |
@@ -110,7 +110,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Síntoma.** Con la app abierta en dos pestañas, A agrega "DesdeA" y luego B (sin recargar) agrega "DesdeB": en `foodsaver:v1` queda solo `DesdeB`. A sigue mostrando 10 registros que ya no están guardados.
 - **Causa raíz (investigada).** `useDespensa` copia el estado inicial una sola vez y, en cada acción, escribe la lista completa con `almacen.setItem`. No lee antes de escribir y no escucha el evento `storage` de `window`; gana la última escritura (R7 se cumple por pestaña, no entre pestañas).
 - **Pasos.** Abrir `localhost:5173` en dos pestañas del mismo perfil, agregar un ingrediente distinto en cada una sin recargar y revisar `localStorage`.
-- **Fix / Re-prueba:** pendiente.
+- **Fix.** Nuevo `src/storage/sincronizar.ts` con `escucharCambiosExternos(window, cb)`: al llegar un evento `storage` de la clave `foodsaver:v1`, lee el texto con `leerDespensa` y, si es válido, entrega la lista. Ignora otras claves y datos corruptos, viejos o borrados (no pisa lo que se ve con basura). `useDespensa` se suscribe con `useEffect` y reemplaza su estado, así la siguiente acción parte de lo último guardado.\n- **Tests nuevos (fallan sin el fix).** `src/storage/sincronizar.test.ts` (5): entrega lista nueva, entrega lista vacía válida, ignora otras claves, ignora corrupto/viejo/null sin lanzar, deja de escuchar al cancelar (falló: el módulo no existía). `scripts/e2e-fase5.mjs` sección AC-3 con dos pestañas reales: sin el fix 3 FALLA (B no veía lo de A, quedaba solo `DesdeB`, A no veía lo de B).\n- **Re-prueba.** Con el fix: las 3 comprobaciones OK; `npm test` 422/422.
 
 ### AC-4 · Media · Cierre sin protección con datos sin guardar
 
