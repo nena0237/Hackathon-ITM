@@ -102,6 +102,7 @@ export function Hoja({ titulo, etiqueta, rol = 'dialog', clave, cerrando, abrido
         aria-modal="true"
         aria-label={etiqueta}
         data-cerrando={cerrando}
+        inert={cerrando}
         tabIndex={-1}
       >
         <div className="mb-4 flex items-start justify-between gap-3">

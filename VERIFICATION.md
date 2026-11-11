@@ -79,7 +79,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 
 | # | Severidad | Hallazgo | Estado |
 |---|---|---|---|
-| AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Reproducido |
+| AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Corregido |
 | AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Reproducido |
 | AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Reproducido |
 | AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Reproducido |
@@ -95,7 +95,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Causa raíz (investigada).** Al guardar con éxito, `Despensa.tsx` llama a `solicitarCierre()`, y `Hoja.tsx` mantiene montado el formulario durante la salida de 200 ms (`SALIDA_MS`). Lo único que bloquea la segunda acción es `pointer-events: none` en `.hoja[data-cerrando="true"]` (`src/index.css`), que frena el ratón y el toque pero no el teclado. `enviar` en `FormularioIngrediente.tsx` y `FormularioUso.tsx` no consulta ningún estado "ya enviado", y `useDespensa` aplica cada llamada sobre el estado ya actualizado (por eso el segundo descuento parte de 5 y llega a 4).
 - **Pasos.** (1) Abrir la banda de Huevos, "Usé Huevos". (2) Escribir `1`. (3) Pulsar Enter dos veces rápido. (4) Ver `foodsaver:v1`: `seed-huevos` tiene `cantidad: 4`. Para "Agregar": llenar Yogur, 2, fecha futura y pulsar Enter dos veces: 11 registros en vez de 10.
 - **No probado:** doble toque con el dedo. Por el análisis del flujo (React vuelve a pintar la hoja con `data-cerrando` antes del segundo clic) no debería repetirse, pero no se reprodujo.
-- **Fix / Re-prueba:** pendiente.
+- **Fix.** `Despensa.tsx`: un `cerrandoRef` se activa en `solicitarCierre()` y los cuatro manejadores (agregar, editar, usé, borrar) devuelven sin hacer nada si ya se pidió el cierre; el ref no depende del momento de repintado. `Hoja.tsx`: el panel lleva `inert` mientras `cerrando`, así el teclado tampoco llega al formulario.\n- **Test nuevo (falla sin el fix).** `scripts/e2e-fase5.mjs` sección AC-1: Enter doble en "Agregar" (esperado 1 lote), Enter doble en "Usé" (esperado 5) y hoja `inert` al cerrar. Antes del fix: 3 FALLA (2 lotes, quedan 4, sin `inert`).\n- **Re-prueba.** Con el fix: las 3 comprobaciones OK; `npm test` 397/397; `e2e-fase3` y `e2e-fase4` siguen en TODO OK (foco y cierre de la hoja intactos).
 
 ### AC-2 · Media · El singular o plural distinto no coincide con las recetas
 

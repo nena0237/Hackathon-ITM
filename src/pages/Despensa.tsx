@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ConfirmarBorrado } from '../components/ConfirmarBorrado'
 import { FilaTiempo } from '../components/FilaTiempo'
 import { FormularioIngrediente } from '../components/FormularioIngrediente'
@@ -59,12 +59,18 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
   const [hoja, setHoja] = useState<HojaAbierta | null>(null)
   const [cerrando, setCerrando] = useState(false)
 
+  // Se activa al pedir el cierre: ignora cualquier segundo envío mientras la hoja sale (AC-1).
+  const cerrandoRef = useRef(false)
   const abrir = (vista: Vista, abridor: HTMLElement | null, copia?: Ingrediente) => {
+    cerrandoRef.current = false
     setCerrando(false)
     setHoja({ vista, abridor, copia })
   }
   const cambiarVista = (vista: Vista) => setHoja((h) => (h ? { ...h, vista } : h))
-  const solicitarCierre = () => setCerrando(true)
+  const solicitarCierre = () => {
+    cerrandoRef.current = true
+    setCerrando(true)
+  }
   const alCerrar = () => {
     setHoja(null)
     setCerrando(false)
@@ -95,6 +101,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             textoBoton="Guardar"
             onCancelar={solicitarCierre}
             onGuardar={(entrada) => {
+              if (cerrandoRef.current) return null
               const r = acciones.agregar(entrada)
               if (!r.ok) return r.errores
               avisar('Ingrediente guardado.')
@@ -136,6 +143,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             inicial={{ nombre: i.nombre, cantidad: cantidadATexto(i.cantidad), unidad: i.unidad, vence: i.vence }}
             onCancelar={solicitarCierre}
             onGuardar={(entrada) => {
+              if (cerrandoRef.current) return null
               const r = acciones.editar(i.id, entrada)
               if (!r.ok) return r.errores
               avisar('Cambios guardados.')
@@ -155,6 +163,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
             ingrediente={i}
             onCancelar={solicitarCierre}
             onUsar={(cantidad) => {
+              if (cerrandoRef.current) return null
               const r = acciones.usar(i.id, cantidad)
               if (!r.ok) return r.error
               avisar(r.eliminado ? `Usaste todo: ${nombre} salió de la despensa.` : 'Cantidad descontada.')
@@ -173,6 +182,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
           ingrediente={i}
           onCancelar={solicitarCierre}
           onConfirmar={() => {
+            if (cerrandoRef.current) return
             acciones.borrar(i.id)
             avisar(`${nombre} borrado.`)
             solicitarCierre()
