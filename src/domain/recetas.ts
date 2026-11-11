@@ -1,6 +1,6 @@
 import { cantidadDisponible } from './despensa'
 import { diasParaVencer, esPorVencer, esVencido } from './fechas'
-import { normalizarNombre } from './nombres'
+import { claveNombre } from './nombres'
 import type { Faltante, Fecha, Ingrediente, IngredienteAprovechado, MotivoFaltante, Receta, Sugerencia } from './tipos'
 import { redondear, sonCompatibles } from './unidades'
 
@@ -14,8 +14,8 @@ export function sugerirRecetas(recetas: readonly Receta[], despensa: readonly In
     const aprovecha: IngredienteAprovechado[] = []
 
     for (const ing of receta.ingredientes) {
-      const clave = normalizarNombre(ing.nombre)
-      const lotes = despensa.filter((l) => normalizarNombre(l.nombre) === clave)
+      const clave = claveNombre(ing.nombre)
+      const lotes = despensa.filter((l) => claveNombre(l.nombre) === clave)
       const vigentes = lotes.filter((l) => !esVencido(l.vence, hoy))
       const utiles = vigentes.filter((l) => sonCompatibles(l.unidad, ing.unidad))
 

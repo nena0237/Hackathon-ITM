@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { diasParaVencer, esVencido, separarVencidos, sugerirRecetas, validarIngrediente, normalizarNombre } from '../domain'
+import { diasParaVencer, esVencido, separarVencidos, sugerirRecetas, validarIngrediente, claveNombre } from '../domain'
 import { RECETAS } from './recetas'
 import { crearSeed } from './seed'
 
@@ -70,7 +70,7 @@ describe('colección de recetas (R8): validez de cada receta', () => {
         expect(r.nombre.trim()).not.toBe('')
         expect(r.ingredientes.length).toBeGreaterThanOrEqual(1)
         expect(r.ingredientes.length).toBeLessThanOrEqual(7)
-        const normalizados = r.ingredientes.map((i) => normalizarNombre(i.nombre))
+        const normalizados = r.ingredientes.map((i) => claveNombre(i.nombre))
         expect(new Set(normalizados).size).toBe(normalizados.length)
       })
 

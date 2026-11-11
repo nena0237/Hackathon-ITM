@@ -80,7 +80,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 | # | Severidad | Hallazgo | Estado |
 |---|---|---|---|
 | AC-1 | Alta | Enter repetido en la hoja ejecuta la acción dos veces ("Usé" descuenta doble; "Agregar" duplica el lote) | Corregido |
-| AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Reproducido |
+| AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Corregido |
 | AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Reproducido |
 | AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Reproducido |
 | AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Reproducido |
@@ -103,7 +103,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Causa raíz (investigada).** `sugerirRecetas` y `cantidadDisponible` comparan `normalizarNombre(a) === normalizarNombre(b)`. La normalización solo quita mayúsculas, tildes y espacios (decisión del brief); no hay plurales ni sinónimos. Las recetas usan plural en `huevos`, `frijoles`, `garbanzos`, `lentejas`, `hongos` y singular en `tomate`, `cebolla`, `limón`. El formulario es texto libre sin sugerencias (`autoComplete="off"`), y el mensaje `no-hay` no distingue "no lo tienes" de "lo tienes con otro nombre".
 - **Pasos.** (1) Dejar en la despensa "Huevo" y "Tomates". (2) Ir a Recetas. (3) Abrir "Huevos pericos": estado parcial con 4 faltantes.
 - **Impacto en la demo:** si quien prueba agrega "Huevo" o "Tomates", el flujo principal (receta que aprovecha lo que vence) no aparece.
-- **Fix / Re-prueba:** pendiente. Es una decisión de dominio (documentarla en CONTEXT.md): lista de sugerencias con los nombres de las recetas y/o plegado simple de plurales.
+- **Fix.** Decisión de dominio nueva: `claveNombre()` en `nombres.ts` = nombre normalizado y, palabra por palabra, sin plural simple (`-es` tras n, r, l o d; si no, `-s` final; palabras de menos de 4 letras no se tocan). `cantidadDisponible` y `sugerirRecetas` comparan con esa clave; el nombre mostrado y guardado no cambia. En esta app no existe una operación de "fusión de lotes" (un nombre repetido se guarda como otro lote), así que no había otro lugar donde aplicarla; `ordenarPorVencimiento` sigue con `normalizarNombre` porque solo desempata el orden.\n- **Tests nuevos (fallan sin el fix: 18 de 20 fallaron).** `src/domain/nombres.test.ts`: Huevo/huevos, Tomates/tomate, Limones/limón, Frijoles, Papas criollas, Yogures, etc.; palabras que no deben confundirse (`pan`/`pantalla`, `arroz`/`arroz integral`); palabras cortas intactas; suma de lotes "Huevo"+"HUEVOS"; receta cocinable con "Huevo" y "Tomates"; caso inverso (despensa "limones", receta "limón"); lote vencido con otro plural sigue como `vencido`; "Tomate de árbol" no cuenta como "tomate".\n- **Re-prueba.** `npm test` 417/417. Con el seed la colección sigue dando 5 cocinables y 3 parciales con un solo faltante.
 
 ### AC-3 · Media · Dos pestañas se pisan
 

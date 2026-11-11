@@ -1,7 +1,7 @@
 import { formatearCantidad } from './presentacion'
 import { validarCantidad, validarIngrediente } from './validacion'
 import { diasParaVencer, esVencido } from './fechas'
-import { normalizarNombre } from './nombres'
+import { claveNombre, normalizarNombre } from './nombres'
 import type { Fecha, Ingrediente, IngredienteEntrada, IngredienteValido, ResultadoDespensa, ResultadoUso, Unidad } from './tipos'
 import { convertirUnidad, redondear } from './unidades'
 
@@ -36,10 +36,10 @@ export function cantidadDisponible(
   unidad: Unidad,
   hoy: Fecha,
 ): number {
-  const clave = normalizarNombre(nombre)
+  const clave = claveNombre(nombre)
   let total = 0
   for (const lote of despensa) {
-    if (normalizarNombre(lote.nombre) !== clave || esVencido(lote.vence, hoy)) continue
+    if (claveNombre(lote.nombre) !== clave || esVencido(lote.vence, hoy)) continue
     const c = convertirUnidad(lote.cantidad, lote.unidad, unidad)
     if (c !== null) total += c
   }
