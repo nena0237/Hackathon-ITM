@@ -84,7 +84,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 | AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Corregido |
 | AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Corregido |
 | AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Corregido |
-| AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Reproducido |
+| AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Corregido |
 | AC-7 | Baja | Ids duplicados en el almacenamiento: la hoja abre otro ingrediente y borrar/editar afecta a ambos | Corregido |
 | AC-8 | Baja | Precisión inconsistente: validación sin mínimo, redondeo a 9 decimales y texto a 4 | Reproducido |
 | AC-9 | Baja | Un nombre de solo caracteres invisibles (U+200B) se acepta | Reproducido |
@@ -133,7 +133,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Síntoma.** Escribir `1.000` (mil, en la notación colombiana) guarda 1. Lo mismo con `1,000`. Se acepta sin aviso y la fila muestra "1 g".
 - **Causa raíz (investigada).** La expresión `NUMERO` en `validacion.ts` (`^[+-]?(\d+([.,]\d+)?|[.,]\d+)$`) acepta un solo separador, punto o coma, y lo trata siempre como decimal. La decisión de F1 ("2,5" = 2.5) no consideró el punto como separador de miles.
 - **Pasos.** Agregar un ingrediente con cantidad `1.000` y mirar el valor guardado.
-- **Fix / Re-prueba:** pendiente. Decisión de dominio: rechazar con mensaje cuando haya exactamente tres dígitos tras el separador, o documentar que el punto es decimal.
+- **Fix.** Decisión de dominio: una cantidad escrita como puntos de miles (`^[1-9]\d{0,2}(\.\d{3})+(,\d+)?$`, p. ej. `1.000`, `12.345`, `1.000.000,5`) se rechaza con "Usa coma para decimales (2,5) y no uses puntos de miles.". `2,5` y `1.5` siguen válidos, igual que `0.001`, `1.25`, `1.0000` y `1,000` (= 1). Los números reales (no texto) no cambian. El cero inicial queda fuera del patrón a propósito para que `0.001` (un miligramo) siga aceptándose.\n- **Tests nuevos (fallan sin el fix: 8 fallos).** `validacion.test.ts`: 7 entradas con puntos de miles rechazadas con el mensaje, 8 entradas que siguen válidas con su valor, el número `1000` no se ve afectado y el error llega al campo `cantidad` de `validarIngrediente`.\n- **Re-prueba.** `npm test` 445/445.
 - **Otras entradas probadas que se comportan bien:** `1.5.0`, `1e3`, `٣`, `0x10`, `5.`, `1 000`, `$5`, `2/3` se rechazan con mensaje claro; `+5`, ` 7 `, `.5` y `00012` se aceptan como 5, 7, 0,5 y 12 (razonable).
 
 ### AC-7 · Baja · Ids duplicados en el almacenamiento

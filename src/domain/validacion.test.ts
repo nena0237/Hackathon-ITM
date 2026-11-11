@@ -174,3 +174,35 @@ describe('unidad y errores combinados', () => {
     if (!r.ok) expect(Object.keys(r.errores)).toEqual(['cantidad'])
   })
 })
+
+describe('AC-6: puntos de miles en la cantidad', () => {
+  const MSG = 'Usa coma para decimales (2,5) y no uses puntos de miles'
+  it.each(['1.000', '12.345', '1.500', '100.000', '1.000.000', '1.000,5', ' 2.500 '])('"%s" se rechaza con el mensaje de puntos de miles', (t) => {
+    const r = validarCantidad(t)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toContain(MSG)
+  })
+
+  it.each<[string, number]>([
+    ['2,5', 2.5],
+    ['1.5', 1.5],
+    ['0.001', 0.001],
+    ['1.25', 1.25],
+    ['1.0000', 1],
+    ['1,000', 1],
+    ['500', 500],
+    ['.5', 0.5],
+  ])('"%s" sigue siendo válida (%d)', (t, esperado) => {
+    expect(validarCantidad(t)).toEqual({ ok: true, valor: esperado })
+  })
+
+  it('un número real (no texto) como 1000 no se ve afectado', () => {
+    expect(validarCantidad(1000)).toEqual({ ok: true, valor: 1000 })
+  })
+
+  it('llega al formulario como error del campo cantidad', () => {
+    const r = validarIngrediente({ nombre: 'Arroz', cantidad: '1.000', unidad: 'g', vence: '2026-05-01' })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errores.cantidad).toContain(MSG)
+  })
+})

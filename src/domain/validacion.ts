@@ -10,6 +10,10 @@ export type ResultadoCantidad = { ok: true; valor: number } | { ok: false; error
 /** Decimal con punto o coma. Sin notación científica, sin hex, sin separadores de miles. */
 const NUMERO = /^[+-]?(\d+([.,]\d+)?|[.,]\d+)$/
 
+/** "1.000", "12.345", "1.000.000,5": puntos de miles (en español el punto separa miles, no decimales). */
+const PUNTOS_DE_MILES = /^[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/
+export const MENSAJE_PUNTOS_DE_MILES = 'Usa coma para decimales (2,5) y no uses puntos de miles.'
+
 /**
  * Cantidad válida: número finito, mayor que 0 y hasta MAX_CANTIDAD.
  * En texto acepta coma decimal ("2,5" → 2.5).
@@ -21,6 +25,7 @@ export function validarCantidad(valor: unknown): ResultadoCantidad {
   } else if (typeof valor === 'string') {
     const t = valor.trim()
     if (t === '') return { ok: false, error: 'La cantidad es obligatoria.' }
+    if (PUNTOS_DE_MILES.test(t)) return { ok: false, error: MENSAJE_PUNTOS_DE_MILES }
     if (!NUMERO.test(t)) return { ok: false, error: 'La cantidad debe ser un número (ej. 2 o 2,5).' }
     n = Number(t.replace(',', '.'))
   } else {
