@@ -83,9 +83,9 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 | AC-2 | Media | "Huevo", "Tomates": el singular/plural no coincide con las recetas y dice "no tienes" | Corregido |
 | AC-3 | Media | Dos pestañas abiertas se pisan: gana la última escritura y se pierde lo de la otra | Corregido |
 | AC-4 | Media | Escape, clic en el fondo o X descartan lo escrito sin avisar | Corregido |
-| AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Reproducido |
+| AC-5 | Baja | Un solo registro inválido descarta toda la despensa guardada | Corregido |
 | AC-6 | Baja | "1.000" y "1,000" se aceptan como 1 (en Colombia el punto separa miles) | Reproducido |
-| AC-7 | Baja | Ids duplicados en el almacenamiento: la hoja abre otro ingrediente y borrar/editar afecta a ambos | Reproducido |
+| AC-7 | Baja | Ids duplicados en el almacenamiento: la hoja abre otro ingrediente y borrar/editar afecta a ambos | Corregido |
 | AC-8 | Baja | Precisión inconsistente: validación sin mínimo, redondeo a 9 decimales y texto a 4 | Reproducido |
 | AC-9 | Baja | Un nombre de solo caracteres invisibles (U+200B) se acepta | Reproducido |
 
@@ -126,7 +126,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Causa raíz (investigada).** `leerDespensa` en `persistencia.ts` exige `ingredientes.every(ingredienteValido)`; basta uno malo para devolver `corrupto`. `almacen.cargarDespensa` entonces sobrescribe `foodsaver:v1` con el seed y solo conserva el texto original en `foodsaver:v1:respaldo`, una única copia que se sobrescribe en cada nueva lectura corrupta (esto último es por lectura del código, no se reprodujo).
 - **Por qué es Baja:** la app misma no puede producir un registro inválido (el formulario valida); solo ocurre con edición manual o si en el futuro se baja un límite.
 - **Pasos.** Guardar en `localStorage` la clave con tres registros, uno con `cantidad: 100001`, y recargar.
-- **Fix / Re-prueba:** pendiente. Opción: conservar los válidos y avisar de cuántos se descartaron.
+- **Fix.** `leerDespensa` valida cada registro: devuelve `ok` con los válidos y `descartados` (cuántos quedaron fuera). Si había registros y ninguno sirve sigue siendo `corrupto` (nada que rescatar → seed + aviso, como antes). `almacen.cargarDespensa`, cuando `descartados > 0`, guarda copia del texto original en `foodsaver:v1:respaldo`, reescribe `foodsaver:v1` ya limpio y muestra "Se descartaron N registro(s) con datos inválidos y se conservaron los demás. Guardamos una copia de los originales.". La siguiente carga ya no repite el aviso.\n- **Tests nuevos (fallan sin el fix).** `persistencia.test.ts`: uno malo entre buenos conserva los demás con `descartados: 1`; cuenta nulos, cantidad fuera de rango, fecha imposible y texto suelto (4); si ninguno es válido sigue `corrupto`. `almacen.test.ts`: conserva válidos, aviso en singular/plural, respaldo igual al original, y la recarga siguiente sin aviso. `scripts/e2e-fase5.mjs` AC-5 en navegador. El test antiguo "un solo ingrediente malo invalida todo" codificaba el comportamiento que este hallazgo cambia; se reescribió. Antes del fix las 8 pruebas nuevas/ajustadas fallaban.\n- **Re-prueba.** `npm test` 428/428. En el navegador con 3 registros (uno con `cantidad: 100001`): quedan Lentejas y Aguacate, aviso "1 registro…" y respaldo con Panela; 6/6 ejecuciones consecutivas OK. Observación: en la primera ejecución justo después de editar, la comprobación del aviso falló una vez sin causa identificada (la salida no se pudo reproducir en las 7 ejecuciones siguientes).
 
 ### AC-6 · Baja · "1.000" y "1,000" se aceptan como 1
 
@@ -141,7 +141,7 @@ node scripts/capturas.mjs               # regenera docs/capturas/ (360 px y 1280
 - **Síntoma.** Con dos registros que comparten `id: "x"`, tocar la banda de "Aguacate" abre la hoja de **"Lentejas"** (comprobado en el navegador). En dominio, `eliminarIngrediente` con ese id borra los 2 y `actualizarIngrediente` renombra los 2.
 - **Causa raíz (investigada).** `ingredienteValido` no comprueba unicidad de ids; `Despensa.tsx` resuelve la hoja con `ingredientes.find((x) => x.id === vista.id)` (el primero), y las operaciones de `despensa.ts` filtran/mapean todos los que coinciden.
 - **Por qué es Baja:** la app genera ids con `crypto.randomUUID()`; solo ocurre con almacenamiento editado a mano.
-- **Fix / Re-prueba:** pendiente.
+- **Fix.** `persistencia.ts`: tras validar, `conIdsUnicos` deja el primer registro con su id y da a los repetidos `id-2`, `id-3`… (sin azar: el dominio sigue puro y no choca con ids existentes como `x-2`). No se pierde ningún dato.\n- **Tests nuevos (fallan sin el fix).** `persistencia.test.ts`: 4 registros con id `x` (más uno `x-2`) → 4 ids distintos, mismos nombres y cantidades, el primero conserva `x` y el `x-2` original no se toca; después de regenerar, borrar o editar uno no afecta al otro. `scripts/e2e-fase5.mjs` AC-7 en navegador.\n- **Re-prueba.** `npm test` 428/428. En el navegador con ids repetidos: se ven los 2 registros, tocar "Aguacate" abre "Aguacate" (antes abría "Lentejas") y borrarlo deja solo "Lentejas".
 
 ### AC-8 · Baja · Precisión inconsistente entre validación, cálculo y texto
 
