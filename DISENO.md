@@ -83,8 +83,12 @@ Prohibido: degradados morados o azules, glassmorphism, emojis, tarjetas idéntic
 | aviso sobre gris A / B | 5,44 / **4,60** | 4,5 | cumple (B es el más justo: no bajar el tono) |
 | aviso sobre crema / blanco (campos) | 8,11 / 8,92 | 4,5 | cumple |
 | crema sobre tinta (barra inferior) | 16,51 | 4,5 | cumple |
-| tinta-suave sobre coral / lima / gris A / gris B | 2,34 / 4,26 / 4,02 / 3,40 | 4,5 | **falla** |
-| coral / lima (línea y nodo) sobre crema | 2,56 / 1,41 | 3 (gráfico) | **falla** |
+| tinta-suave sobre coral / lima / gris A / gris B | 2,34 / 4,26 / 4,02 / 3,40 | 4,5 | **falla — TEXTO (combinación prohibida)** |
+| coral / lima (línea y nodo) sobre crema | 2,56 / 1,41 | 3 (gráfico) | **falla — DECORATIVO (no es texto)** |
+
+Qué es texto y qué es decorativo:
+- **Texto, corregido por regla:** el par `tinta-suave` sobre bandas de color falla, por eso está **prohibido**. Auditoría del código: los 15 usos de `text-tinta-suave` en `src/` van sobre el fondo crema (página, encabezados fijos `.encabezado-seccion` y hoja inferior `.hoja`, ambos crema), donde la razón es 6,01:1. Ninguno cae sobre una banda de color. Todo texto dentro de una banda es `tinta` (6,44 a 13,36).
+- **Decorativo, sin requisito de texto:** la línea de tiempo (tramos) y el relleno de los nodos en coral/lima sobre crema. Aplica el criterio de 3:1 para gráficos solo a lo que transmite información, y aquí no la transmite sola (el estado va en ícono y texto). El nodo además lleva aro de tinta de 2 px (16,5:1), que es lo que asegura su visibilidad.
 
 Decisiones por los fallos:
 1. **Sobre una banda de color solo va tinta**; `tinta-suave` se usa únicamente sobre el fondo crema.

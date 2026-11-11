@@ -23,11 +23,10 @@ export const RECETAS: Receta[] = [
       { nombre: 'harina de maíz', cantidad: 150, unidad: 'g' },
       { nombre: 'huevos', cantidad: 2, unidad: 'unidad' },
       { nombre: 'queso', cantidad: 100, unidad: 'g' },
-      { nombre: 'tomate', cantidad: 1, unidad: 'unidad' },
       { nombre: 'cebolla', cantidad: 1, unidad: 'unidad' },
     ],
     instrucciones:
-      'Corta el pollo en filetes, pásalos por huevo batido y luego por la harina de maíz mezclada con el queso rallado.\nHornea a 200 grados 20 minutos, volteando una vez.\nSirve con una salsa fresca de tomate y cebolla picados.',
+      'Corta el pollo en filetes, pásalos por huevo batido y luego por la harina de maíz mezclada con el queso rallado.\nHornea a 200 grados 20 minutos, volteando una vez.\nSirve con una salsa fresca de cebolla picada con limón y sal.',
   },
   {
     id: 'tacos-arepa-pollo-hogao',
@@ -48,12 +47,11 @@ export const RECETAS: Receta[] = [
     ingredientes: [
       { nombre: 'arroz', cantidad: 300, unidad: 'g' },
       { nombre: 'pollo', cantidad: 300, unidad: 'g' },
-      { nombre: 'tomate', cantidad: 2, unidad: 'unidad' },
       { nombre: 'cebolla', cantidad: 1, unidad: 'unidad' },
       { nombre: 'huevos', cantidad: 2, unidad: 'unidad' },
     ],
     instrucciones:
-      'Sofríe cebolla y tomate, dora el pollo en cubos y agrega el arroz.\nCubre con agua caliente y cocina destapado, revolviendo, hasta que quede meloso.\nSirve con un huevo frito de yema blanda encima.',
+      'Sofríe la cebolla, dora el pollo en cubos y agrega el arroz.\nCubre con agua caliente y cocina destapado, revolviendo, hasta que quede meloso.\nSirve con un huevo frito de yema blanda encima.',
   },
   {
     id: 'bunuelos-horno',

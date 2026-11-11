@@ -156,10 +156,13 @@ describe('demo: seed + recetas + dominio (fecha fija 2026-03-15)', () => {
     expect(de('tacos-arepa-pollo-hogao').estado).toBe('cocinable')
   })
 
-  it('la primera sugerencia es la cocinable con más urgencia: pollo en costra (urgencia 4), no los pericos', () => {
+  it('la primera sugerencia son los pericos (urgencia 3); pollo en costra empata en 3 y pierde por nombre', () => {
     const s = sugerencias()
-    expect(s[0].receta.id).toBe('pollo-costra-maiz-queso')
-    expect(s[0].urgencia).toBe(4)
+    expect(s[0].receta.id).toBe('huevos-pericos')
+    expect(s[0].urgencia).toBe(3)
+    expect(s[1].receta.id).toBe('pollo-costra-maiz-queso') // los tacos de arepa (urgencia 3) vienen después por nombre
+    expect(s[1].urgencia).toBe(3)
+    expect(s[1].aprovecha.map((a) => a.nombre)).toEqual(['pollo', 'huevos', 'queso'])
     expect(s.slice(0, 5).every((x) => x.estado === 'cocinable')).toBe(true)
     expect(s.slice(0, 5).map((x) => x.receta.id).sort()).toEqual(IDS_COCINABLES)
   })

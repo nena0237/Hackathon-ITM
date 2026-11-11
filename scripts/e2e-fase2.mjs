@@ -65,7 +65,7 @@ const cocinables = await page.$$eval('[data-testid=lista-cocinables] > li', (l) 
 const parciales = await page.$$eval('[data-testid=lista-parciales] > li', (l) => l.map((e) => e.dataset.receta))
 console.log('   cocinables:', cocinables.join(' | '))
 console.log('   parciales :', parciales.join(' | '))
-ok(cocinables[0] === 'Pollo en costra de maíz y queso', 'La primera cocinable es la de más urgencia aprovechada (Pollo en costra, urgencia 4)', cocinables[0])
+ok(cocinables[0] === 'Huevos pericos gratinados con queso', 'La primera cocinable es Huevos pericos (urgencia 3; empata con Pollo en costra y gana por nombre)', cocinables[0])
 ok(cocinables.length === 5 && cocinables.includes('Huevos pericos gratinados con queso'), `5 cocinables, incluidos los pericos (${cocinables.length})`)
 ok(!cocinables.includes('Mazamorra cremosa de maíz y queso') && parciales.includes('Mazamorra cremosa de maíz y queso'), 'La mazamorra (leche vencida) NO es cocinable (está en parciales)')
 
