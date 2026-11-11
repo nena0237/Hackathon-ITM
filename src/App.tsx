@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useDespensa } from './hooks/useDespensa'
 import { useHoy } from './hooks/useHoy'
 import { Despensa } from './pages/Despensa'
 import { Recetas } from './pages/Recetas'
@@ -8,10 +9,17 @@ type Pestana = 'despensa' | 'recetas'
 
 export default function App({ carga }: { carga: CargaInicial }) {
   const hoy = useHoy()
+  const { ingredientes, acciones, falloGuardar } = useDespensa(carga, hoy)
   const [pestana, setPestana] = useState<Pestana>('despensa')
   const [aviso, setAviso] = useState<string | null>(carga.aviso)
-  // En esta fase la despensa solo se lee; la Fase 3 agrega altas, ediciones y borrados.
-  const [ingredientes] = useState(carga.ingredientes)
+  const [mensaje, setMensaje] = useState<string | null>(null)
+
+  const avisar = useCallback((m: string) => setMensaje(m), [])
+  useEffect(() => {
+    if (!mensaje) return
+    const t = window.setTimeout(() => setMensaje(null), 4000)
+    return () => window.clearTimeout(t)
+  }, [mensaje])
 
   const boton = (id: Pestana, texto: string) => (
     <button
@@ -42,12 +50,28 @@ export default function App({ carga }: { carga: CargaInicial }) {
         </div>
       )}
 
+      {falloGuardar && (
+        <p role="alert" className="mb-4 rounded-xl border-2 border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          No se pudo guardar en este navegador: los cambios se perderán al recargar.
+        </p>
+      )}
+
+      <div role="status" aria-live="polite" className="min-h-0">
+        {mensaje && <p className="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">✓ {mensaje}</p>}
+      </div>
+
       <nav aria-label="Secciones" className="mb-4 flex gap-2">
         {boton('despensa', 'Despensa')}
         {boton('recetas', 'Recetas')}
       </nav>
 
-      <main>{pestana === 'despensa' ? <Despensa ingredientes={ingredientes} hoy={hoy} /> : <Recetas ingredientes={ingredientes} hoy={hoy} />}</main>
+      <main>
+        {pestana === 'despensa' ? (
+          <Despensa ingredientes={ingredientes} hoy={hoy} acciones={acciones} avisar={avisar} />
+        ) : (
+          <Recetas ingredientes={ingredientes} hoy={hoy} />
+        )}
+      </main>
     </div>
   )
 }

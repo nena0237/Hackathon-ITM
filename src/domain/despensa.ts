@@ -1,6 +1,8 @@
+import { formatearCantidad } from './presentacion'
+import { validarCantidad, validarIngrediente } from './validacion'
 import { diasParaVencer, esVencido } from './fechas'
 import { normalizarNombre } from './nombres'
-import type { Fecha, Ingrediente, IngredienteValido, Unidad } from './tipos'
+import type { Fecha, Ingrediente, IngredienteEntrada, IngredienteValido, ResultadoDespensa, ResultadoUso, Unidad } from './tipos'
 import { convertirUnidad, redondear } from './unidades'
 
 /** Orden ascendente por fecha de vencimiento; desempate por nombre. No muta la entrada. */
@@ -59,4 +61,36 @@ export function actualizarIngrediente(
 
 export function eliminarIngrediente(despensa: readonly Ingrediente[], id: string): Ingrediente[] {
   return despensa.filter((i) => i.id !== id)
+}
+
+/** Valida la entrada y agrega el ingrediente. Un nombre repetido se guarda como OTRO lote (no se fusiona). */
+export function agregarValidado(despensa: readonly Ingrediente[], entrada: IngredienteEntrada, id: string): ResultadoDespensa {
+  const v = validarIngrediente(entrada)
+  if (!v.ok) return { ok: false, errores: v.errores }
+  return { ok: true, despensa: agregarIngrediente(despensa, v.valor, id) }
+}
+
+/** Valida la entrada y actualiza el ingrediente con ese id. */
+export function editarValidado(despensa: readonly Ingrediente[], id: string, entrada: IngredienteEntrada): ResultadoDespensa {
+  if (!despensa.some((i) => i.id === id)) return { ok: false, errores: { general: 'Ese ingrediente ya no existe.' } }
+  const v = validarIngrediente(entrada)
+  if (!v.ok) return { ok: false, errores: v.errores }
+  return { ok: true, despensa: actualizarIngrediente(despensa, id, v.valor) }
+}
+
+/**
+ * Acción "usé": descuenta `usada` (en la unidad del lote) de ese lote.
+ * Decisión: si llega exactamente a 0, el lote se ELIMINA (una cantidad 0 es inválida en el dominio).
+ * No permite descontar más de lo que hay ni valores inválidos (0, negativos, texto, NaN, Infinity).
+ */
+export function usarIngrediente(despensa: readonly Ingrediente[], id: string, usada: unknown): ResultadoUso {
+  const lote = despensa.find((i) => i.id === id)
+  if (!lote) return { ok: false, error: 'Ese ingrediente ya no existe.' }
+  const c = validarCantidad(usada)
+  if (!c.ok) return { ok: false, error: c.error }
+  const restante = redondear(lote.cantidad - c.valor)
+  if (restante < 0)
+    return { ok: false, error: `No puedes usar más de lo que tienes (tienes ${formatearCantidad(lote.cantidad, lote.unidad)}).` }
+  if (restante === 0) return { ok: true, despensa: eliminarIngrediente(despensa, id), eliminado: true, restante: 0 }
+  return { ok: true, despensa: despensa.map((i) => (i.id === id ? { ...i, cantidad: restante } : i)), eliminado: false, restante }
 }

@@ -21,9 +21,9 @@ Marca `[x]` = cerrada y verificada. Fase 1 = T1 a T4; el resto queda pendiente.
 - [x] **T8 — Pantalla Recetas.** Hecho cuando: cocinables primero, parciales con faltantes, muestra qué ingredientes por vencer aprovecha; "Huevos pericos" aprovecha tomate y huevos; "Arroz con leche" no es cocinable. _R5, R6, R8._
 
 ### Resto de requisitos (Fase 3)
-- [ ] **T9 — Formulario agregar/editar con errores bajo cada campo.** Hecho cuando: cantidad 0, negativa, texto, vacía y 1e9 muestran mensaje en español sin `alert`. _R1, R3._
-- [ ] **T10 — Borrar con confirmación, acción "usé", estado vacío con "cargar datos de ejemplo".** Hecho cuando: cada acción persiste al recargar. _R1, R7._
-- [ ] **T11 — README con tabla requisito → dónde está en la app.** Hecho cuando: R1 a R8 tienen fila con ubicación real. _R1–R8._
+- [x] **T9 — Formulario agregar/editar con errores bajo cada campo.** Hecho cuando: cantidad 0, negativa, texto, vacía y 1e9 muestran mensaje en español sin `alert`. _R1, R3._
+- [x] **T10 — Borrar con confirmación, acción "usé", estado vacío con "cargar datos de ejemplo".** Hecho cuando: cada acción persiste al recargar. _R1, R7._
+- [x] **T11 — README con tabla requisito → dónde está en la app.** Hecho cuando: R1 a R8 tienen fila con ubicación real. _R1–R8._
 
 ### UX (Fase 4)
 - [ ] **T12 — Pulido mobile-first.** Hecho cuando: se ve bien a 360 px y en escritorio, color + texto por urgencia, contador "N por vencer", foco y etiquetas accesibles.
@@ -67,3 +67,13 @@ Qué cambió respecto a las instrucciones y por qué.
     - "Harina De Maíz": la clase CSS `capitalize` pone mayúscula a cada palabra → se reemplazó por `capitalizar()` (solo la primera letra) y los nombres de la despensa se muestran como se escribieron. **El script de navegador no lo detectó** (lee texto del DOM, no el render); lo vi en la captura. Lección: las capturas se revisan a ojo.
     - "leche está vencido": error de género → mensaje sin concordancia: "Lo que tienes de leche está vencido…".
 15. **Verificación en navegador real (Edge, Playwright fuera del repo):** 49 comprobaciones pasan (flujo de demo, orden, vencidos aparte, recarga, grupos 7, 8 y 10, cambio de día con reloj simulado, sin errores en consola). **Límite honesto del grupo 10:** los formularios de agregar/editar/borrar son de la Fase 3; en esta fase las tres operaciones se simularon modificando `localStorage` directamente y recargando. La prueba con la interfaz real queda para la Fase 3.
+
+### Fase 3 — ajustes y decisiones
+16. **Correcciones previas:** los scripts de navegador se movieron a `scripts/` (`e2e-fase2.mjs`, `e2e-fase3.mjs`) con URL y carpeta de capturas por parámetro, y se documentó en `VERIFICATION.md` cómo correrlos. `playwright-core` NO está en `package.json`: se instala con `npm install --no-save playwright-core` (se verificó que `package.json` y `package-lock.json` no cambian). `capturas/` se agregó a `.gitignore`. Incidente: al editar el script con un comando de shell, unas comillas invertidas se ejecutaron como comando (un `npm install` que falló sin efecto); se revisó con `git status` que no cambió nada.
+17. **DECISIÓN "usé" llega a 0 → se ELIMINA el lote.** Razón: una cantidad 0 es inválida en el dominio (R3) y `leerDespensa` rechazaría ese registro al recargar (lo trataría como datos corruptos); un lote agotado tampoco debe seguir apareciendo ni sumar. Se probó en dominio (`operaciones.test.ts`) y en el navegador (el lote no vuelve tras recargar). "Usé" no se ofrece en los vencidos (para eso están Editar y Borrar).
+18. **"Usé" descuenta en la unidad del lote** y acepta coma decimal; rechaza vacío, 0, negativo, texto, NaN, Infinity, más de 100000 y más de lo que hay (mensaje: "No puedes usar más de lo que tienes (tienes 6 unidades)"). El resultado se redondea para evitar ruido de flotantes (0,3 − 0,1 = 0,2 exacto).
+19. **Lógica fuera de React:** `agregarValidado`, `editarValidado` y `usarIngrediente` están en `src/domain/despensa.ts`; el hook `useDespensa` solo llama al dominio y guarda; los formularios reciben callbacks y solo muestran errores. `cantidadATexto` (dominio) precarga la cantidad al editar sin perder decimales.
+20. **Formulario:** campo de cantidad de tipo texto (no `type=number`) para poder aceptar "2,5" y mostrar nuestros mensajes; `noValidate` para que no salgan globos del navegador; el foco va al primer campo con error. Fecha con `type=date`.
+21. **"Cargar datos de ejemplo"** solo se ofrece en el estado vacío (no sobrescribe datos existentes) y usa `crearSeed(hoy)` con el `hoy` actual del hook, no las fechas guardadas (verificado en el navegador avanzando el reloj 10 días).
+22. **Pruebas:** 243 tests (+31 de operaciones). 61 comprobaciones de navegador en `e2e-fase3.mjs` y 49 en `e2e-fase2.mjs`. El script de la Fase 3 pasó a la primera, por eso se validó con 3 mutantes de la app (permitir descontar de más, no guardar, fechas fijas en "cargar ejemplo"): los 3 se detectaron. No se encontraron bugs nuevos de la app en esta fase.
+23. **Pendiente conscientemente (Fase 4, sin pulir ahora):** el aviso de éxito desaparece solo a los 4 s; en 360 px el resumen parte "2 vencidos" en dos líneas; un nombre escrito en minúscula ("tomate") se muestra como se escribió.

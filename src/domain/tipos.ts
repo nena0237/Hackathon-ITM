@@ -67,3 +67,13 @@ export interface Sugerencia {
   /** Cantidad de ingredientes por vencer que aprovecha. */
   urgencia: number
 }
+
+export type ErroresFormulario = Partial<Record<CampoIngrediente | 'general', string>>
+
+export type ResultadoDespensa =
+  | { ok: true; despensa: Ingrediente[] }
+  | { ok: false; errores: ErroresFormulario }
+
+export type ResultadoUso =
+  | { ok: true; despensa: Ingrediente[]; eliminado: boolean; restante: number }
+  | { ok: false; error: string }

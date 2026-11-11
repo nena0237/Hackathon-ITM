@@ -46,3 +46,8 @@ export function formatearFecha(fecha: string): string {
 export function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
+
+/** Cantidad como texto editable en un campo: 2.5 → "2,5", sin perder decimales ni usar notación científica. */
+export function cantidadATexto(n: number): string {
+  return n.toLocaleString('en-US', { maximumFractionDigits: 20, useGrouping: false }).replace('.', ',')
+}
