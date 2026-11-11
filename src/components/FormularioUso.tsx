@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
+import { capitalizarNombre } from '../domain/formato'
 import { formatearCantidad } from '../domain/presentacion'
 import type { Ingrediente } from '../domain/tipos'
 
@@ -20,9 +21,9 @@ export function FormularioUso({ ingrediente, onUsar, onCancelar }: Props) {
   }
 
   return (
-    <form onSubmit={enviar} noValidate aria-label={`Usar ${ingrediente.nombre}`} className="space-y-2 rounded-xl border-2 border-emerald-300 bg-white p-3">
-      <label htmlFor={uid} className="font-semibold">
-        ¿Cuánto usaste de {ingrediente.nombre}? <span className="font-normal text-stone-600">(tienes {formatearCantidad(ingrediente.cantidad, ingrediente.unidad)})</span>
+    <form onSubmit={enviar} noValidate aria-label={`Usar ${ingrediente.nombre}`} className="space-y-3">
+      <label htmlFor={uid} className="text-base font-semibold">
+        ¿Cuánto usaste de {capitalizarNombre(ingrediente.nombre)}? <span className="font-normal text-tinta-suave">(tienes {formatearCantidad(ingrediente.cantidad, ingrediente.unidad)})</span>
       </label>
       <div className="flex gap-2">
         <input
@@ -35,20 +36,20 @@ export function FormularioUso({ ingrediente, onUsar, onCancelar }: Props) {
           onChange={(e) => setValor(e.target.value)}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${uid}-error` : undefined}
-          className={`min-h-11 w-full rounded-lg border-2 bg-white px-3 text-base ${error ? 'border-red-500' : 'border-stone-300'}`}
+          className={`min-h-12 w-full rounded-xl border-2 bg-white px-3 text-base text-tinta ${error ? 'border-aviso' : 'border-tinta'}`}
         />
-        <span className="flex items-center text-stone-700">{ingrediente.unidad}</span>
+        <span className="flex items-center text-base font-semibold">{ingrediente.unidad}</span>
       </div>
       {error && (
-        <p id={`${uid}-error`} role="alert" className="text-sm font-medium text-red-700">
+        <p id={`${uid}-error`} role="alert" className="text-sm font-semibold text-aviso">
           {error}
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className="min-h-11 flex-1 rounded-xl bg-emerald-700 px-4 font-semibold text-white">
+        <button type="submit" className="min-h-12 flex-1 rounded-2xl bg-tinta px-4 text-base font-semibold text-crema">
           Descontar
         </button>
-        <button type="button" onClick={onCancelar} className="min-h-11 rounded-xl bg-white px-4 font-semibold ring-1 ring-stone-300">
+        <button type="button" onClick={onCancelar} className="min-h-12 rounded-2xl border-2 border-tinta px-5 text-base font-semibold">
           Cancelar
         </button>
       </div>

@@ -30,11 +30,11 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
     if (primero) refs.current[primero]?.focus()
   }
 
-  const base = 'mt-1 block min-h-11 w-full rounded-lg border-2 bg-white px-3 text-base'
-  const clase = (c: Campo) => `${base} ${errores[c] ? 'border-red-500' : 'border-stone-300'}`
+  const base = 'mt-1 block min-h-12 w-full rounded-xl border-2 bg-white px-3 text-base text-tinta'
+  const clase = (c: Campo) => `${base} ${errores[c] ? 'border-aviso' : 'border-tinta'}`
   const Error = ({ c }: { c: Campo }) =>
     errores[c] ? (
-      <p id={`${id(c)}-error`} role="alert" className="mt-1 text-sm font-medium text-red-700">
+      <p id={`${id(c)}-error`} role="alert" className="mt-1 text-sm font-semibold text-aviso">
         {errores[c]}
       </p>
     ) : null
@@ -44,16 +44,15 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
   })
 
   return (
-    <form onSubmit={enviar} noValidate aria-label={titulo} className="space-y-3 rounded-xl border-2 border-emerald-300 bg-white p-4">
-      <h3 className="text-lg font-bold">{titulo}</h3>
+    <form onSubmit={enviar} noValidate aria-label={titulo} className="space-y-4">
       {errores.general && (
-        <p role="alert" className="text-sm font-medium text-red-700">
+        <p role="alert" className="text-sm font-semibold text-aviso">
           {errores.general}
         </p>
       )}
 
       <div>
-        <label htmlFor={id('nombre')} className="font-semibold">
+        <label htmlFor={id('nombre')} className="text-base font-semibold">
           Nombre
         </label>
         <input
@@ -71,7 +70,7 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
 
       <div className="flex gap-3">
         <div className="flex-1">
-          <label htmlFor={id('cantidad')} className="font-semibold">
+          <label htmlFor={id('cantidad')} className="text-base font-semibold">
             Cantidad
           </label>
           <input
@@ -88,7 +87,7 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
           <Error c="cantidad" />
         </div>
         <div className="w-32">
-          <label htmlFor={id('unidad')} className="font-semibold">
+          <label htmlFor={id('unidad')} className="text-base font-semibold">
             Unidad
           </label>
           <select
@@ -110,7 +109,7 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
       </div>
 
       <div>
-        <label htmlFor={id('vence')} className="font-semibold">
+        <label htmlFor={id('vence')} className="text-base font-semibold">
           Fecha de vencimiento
         </label>
         <input
@@ -126,10 +125,10 @@ export function FormularioIngrediente({ titulo, textoBoton, inicial, onGuardar, 
       </div>
 
       <div className="flex gap-2">
-        <button type="submit" className="min-h-12 flex-1 rounded-xl bg-emerald-700 px-4 font-semibold text-white">
+        <button type="submit" className="min-h-12 flex-1 rounded-2xl bg-tinta px-4 text-base font-semibold text-crema">
           {textoBoton}
         </button>
-        <button type="button" onClick={onCancelar} className="min-h-12 rounded-xl bg-white px-4 font-semibold ring-1 ring-stone-300">
+        <button type="button" onClick={onCancelar} className="min-h-12 rounded-2xl border-2 border-tinta px-5 text-base font-semibold">
           Cancelar
         </button>
       </div>

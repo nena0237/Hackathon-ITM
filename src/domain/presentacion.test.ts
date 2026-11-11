@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { estadoVencimiento, sumarDias } from './fechas'
-import { describirFaltante, describirVencimiento, formatearCantidad, formatearNumero } from './presentacion'
+import { describirFaltante, formatearCantidad, formatearNumero } from './presentacion'
 import { en, HOY } from './pruebas-util'
 import type { Faltante } from './tipos'
 
@@ -48,15 +48,6 @@ describe('textos para la interfaz', () => {
     expect(formatearCantidad(1, 'l')).toBe('1 l')
   })
 
-  it('describirVencimiento cubre vencido, hoy, mañana y futuro', () => {
-    expect(describirVencimiento(-5)).toBe('venció hace 5 días')
-    expect(describirVencimiento(-1)).toBe('venció ayer')
-    expect(describirVencimiento(0)).toBe('vence hoy')
-    expect(describirVencimiento(1)).toBe('vence mañana')
-    expect(describirVencimiento(2)).toBe('vence en 2 días')
-    expect(describirVencimiento(180)).toBe('vence en 180 días')
-  })
-
   it('describirFaltante da un mensaje distinto y claro por cada motivo', () => {
     const base = { nombre: 'leche', unidad: 'l', necesita: 1, disponible: 0, falta: 1 } as const
     const f = (motivo: Faltante['motivo'], extra: Partial<Faltante> = {}): Faltante => ({ ...base, motivo, ...extra })
@@ -75,20 +66,3 @@ describe('textos para la interfaz', () => {
   })
 })
 
-describe('formatearFecha', () => {
-  it('AAAA-MM-DD → DD/MM/AAAA', async () => {
-    const { formatearFecha } = await import('./presentacion')
-    expect(formatearFecha('2026-03-05')).toBe('05/03/2026')
-    expect(formatearFecha('2036-12-31')).toBe('31/12/2036')
-  })
-})
-
-describe('capitalizar', () => {
-  it('solo la primera letra (no cada palabra)', async () => {
-    const { capitalizar } = await import('./presentacion')
-    expect(capitalizar('harina de maíz')).toBe('Harina de maíz')
-    expect(capitalizar('ñame')).toBe('Ñame')
-    expect(capitalizar('')).toBe('')
-    expect(capitalizar('Tomate')).toBe('Tomate')
-  })
-})

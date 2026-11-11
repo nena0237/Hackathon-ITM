@@ -1,77 +1,73 @@
 import { useCallback, useEffect, useState } from 'react'
+import { BarraInferior, type Pestana } from './components/BarraInferior'
+import { IconoUsar } from './components/Iconos'
 import { useDespensa } from './hooks/useDespensa'
 import { useHoy } from './hooks/useHoy'
 import { Despensa } from './pages/Despensa'
 import { Recetas } from './pages/Recetas'
 import type { CargaInicial } from './storage/almacen'
 
-type Pestana = 'despensa' | 'recetas'
+interface Mensaje {
+  texto: string
+  saliendo: boolean
+}
 
 export default function App({ carga }: { carga: CargaInicial }) {
   const hoy = useHoy()
   const { ingredientes, acciones, falloGuardar } = useDespensa(carga, hoy)
   const [pestana, setPestana] = useState<Pestana>('despensa')
   const [aviso, setAviso] = useState<string | null>(carga.aviso)
-  const [mensaje, setMensaje] = useState<string | null>(null)
+  const [mensaje, setMensaje] = useState<Mensaje | null>(null)
 
-  const avisar = useCallback((m: string) => setMensaje(m), [])
+  const avisar = useCallback((texto: string) => setMensaje({ texto, saliendo: false }), [])
+
+  // El aviso de éxito se retira solo a los 4 s (con una salida corta de 200 ms) y nunca roba el foco.
   useEffect(() => {
-    if (!mensaje) return
-    const t = window.setTimeout(() => setMensaje(null), 4000)
-    return () => window.clearTimeout(t)
+    if (!mensaje || mensaje.saliendo) return
+    const salir = window.setTimeout(() => setMensaje((m) => (m ? { ...m, saliendo: true } : m)), 4000)
+    return () => window.clearTimeout(salir)
   }, [mensaje])
-
-  const boton = (id: Pestana, texto: string) => (
-    <button
-      type="button"
-      onClick={() => setPestana(id)}
-      aria-current={pestana === id ? 'page' : undefined}
-      className={`min-h-12 flex-1 rounded-xl px-4 text-base font-semibold ${
-        pestana === id ? 'bg-emerald-700 text-white' : 'bg-white text-stone-800 ring-1 ring-stone-300'
-      }`}
-    >
-      {texto}
-    </button>
-  )
+  useEffect(() => {
+    if (!mensaje?.saliendo) return
+    const quitar = window.setTimeout(() => setMensaje(null), 200)
+    return () => window.clearTimeout(quitar)
+  }, [mensaje?.saliendo])
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl bg-stone-50 px-4 pb-10 text-stone-900">
-      <header className="py-4">
-        <h1 className="text-2xl font-bold">🥗 Food Saver</h1>
-        <p className="text-sm text-stone-600">Usa primero lo que vence antes y desperdicia menos.</p>
-      </header>
-
+    <div className="mx-auto min-h-screen max-w-2xl px-4 pb-32">
       {aviso && (
-        <div role="alert" className="mb-4 flex items-start justify-between gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-900">
-          <p>{aviso}</p>
-          <button type="button" onClick={() => setAviso(null)} className="shrink-0 rounded-lg px-2 py-1 font-semibold underline">
+        <div role="alert" className="mt-4 flex items-start justify-between gap-3 rounded-2xl bg-mango px-4 py-3 text-base">
+          <p className="font-medium">{aviso}</p>
+          <button type="button" onClick={() => setAviso(null)} className="min-h-11 shrink-0 rounded-full px-3 font-semibold underline underline-offset-4">
             Entendido
           </button>
         </div>
       )}
 
       {falloGuardar && (
-        <p role="alert" className="mb-4 rounded-xl border-2 border-red-300 bg-red-50 p-3 text-sm text-red-900">
+        <p role="alert" className="mt-4 rounded-2xl bg-coral px-4 py-3 text-base font-semibold">
           No se pudo guardar en este navegador: los cambios se perderán al recargar.
         </p>
       )}
 
-      <div role="status" aria-live="polite" className="min-h-0">
-        {mensaje && <p className="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">✓ {mensaje}</p>}
-      </div>
-
-      <nav aria-label="Secciones" className="mb-4 flex gap-2">
-        {boton('despensa', 'Despensa')}
-        {boton('recetas', 'Recetas')}
-      </nav>
-
-      <main>
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
         {pestana === 'despensa' ? (
           <Despensa ingredientes={ingredientes} hoy={hoy} acciones={acciones} avisar={avisar} />
         ) : (
           <Recetas ingredientes={ingredientes} hoy={hoy} />
         )}
       </main>
+
+      <div role="status" aria-live="polite">
+        {mensaje && (
+          <p className="aviso-exito flex items-center gap-2 rounded-2xl bg-lima px-4 py-3 text-base font-semibold" data-saliendo={mensaje.saliendo}>
+            <IconoUsar className="size-5 shrink-0" />
+            {mensaje.texto}
+          </p>
+        )}
+      </div>
+
+      <BarraInferior activa={pestana} onCambiar={setPestana} />
     </div>
   )
 }

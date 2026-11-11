@@ -92,3 +92,7 @@ Demo objetivo: registrar varios ingredientes con distintas fechas y encontrar un
 - Entradas inválidas muestran mensajes claros en español, sin pantallas rotas ni trazas.
 - `npm test` y `npm run build` pasan sin errores.
 - CONTEXT.md, PLAN.md y VERIFICATION.md existen y están actualizados.
+
+## Diseño visual
+
+La especificación visual (paleta "Fruta + línea de tiempo", tipografía, anatomía de la despensa, movimiento y accesibilidad) está en [`DISENO.md`](DISENO.md). Las reglas de dominio no cambian; la lógica de formato vive en `src/domain/formato.ts`.

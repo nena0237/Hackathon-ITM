@@ -1,1 +1,243 @@
 @import "tailwindcss";
+@import "@fontsource/bricolage-grotesque/latin-800.css";
+@import "@fontsource/instrument-sans/latin-400.css";
+@import "@fontsource/instrument-sans/latin-500.css";
+@import "@fontsource/instrument-sans/latin-600.css";
+
+/* Tokens del diseño "Fruta + línea de tiempo" (ver DISENO.md) */
+@theme {
+  --color-crema: #fff3dc;
+  --color-tinta: #1c1410;
+  --color-tinta-suave: #6b5a48; /* solo sobre crema */
+  --color-coral: #ff6b4a;
+  --color-coral-claro: #ff8f70;
+  --color-mango: #ffc53d;
+  --color-mango-claro: #ffd97a;
+  --color-lima: #bfdc4a;
+  --color-lima-claro: #cfe56e;
+  --color-gris-a: #d3c9b6;
+  --color-gris-b: #c4b9a4;
+  --color-aviso: #8e1f12;
+
+  --font-titulo: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-texto: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-crema);
+  }
+  body {
+    background: var(--color-crema);
+    color: var(--color-tinta);
+    font-family: var(--font-texto);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulo);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  button {
+    cursor: pointer;
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-tinta);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  .sobre-tinta :focus-visible {
+    outline-color: var(--color-crema);
+  }
+}
+
+/* ───────── Color por urgencia: un solo lugar define cada tramo ───────── */
+[data-nivel="hoy"] { --tono: var(--color-coral); }
+[data-nivel="manana"] { --tono: var(--color-coral-claro); }
+[data-nivel="dos"] { --tono: var(--color-mango); }
+[data-nivel="tres"] { --tono: var(--color-mango-claro); }
+[data-nivel="lejos"] { --tono: var(--color-lima); }
+[data-nivel="muy-lejos"] { --tono: var(--color-lima-claro); }
+
+.rayado {
+  background: repeating-linear-gradient(135deg, var(--color-gris-a) 0 8px, var(--color-gris-b) 8px 16px);
+}
+
+/* ───────── Línea de tiempo ───────── */
+.fila {
+  --nodo-y: 14px; /* el nodo mide 16 px: su centro queda a 22 px del tope de la banda */
+  display: grid;
+  grid-template-columns: 50px 16px minmax(0, 1fr);
+  column-gap: 8px;
+  margin-right: -1rem; /* la banda llega al borde de la pantalla */
+}
+.fila > * {
+  padding-bottom: 10px;
+}
+.carril {
+  position: relative;
+}
+.tramo {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--tono);
+  transform-origin: top;
+}
+.fila:first-child .tramo { top: calc(var(--nodo-y) + 8px); }
+.fila:last-child .tramo { bottom: auto; height: calc(var(--nodo-y) + 8px); }
+.fila:only-child .tramo { display: none; }
+.fila[data-nivel="vencido"] .tramo {
+  background: repeating-linear-gradient(to bottom, var(--color-gris-b) 0 6px, transparent 6px 12px);
+}
+.nodo {
+  position: absolute;
+  left: 50%;
+  top: var(--nodo-y);
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-tinta);
+  background: var(--tono, var(--color-gris-b));
+  display: grid;
+  place-items: center;
+  z-index: 1;
+}
+.nodo[data-nivel="vencido"] { background: var(--color-gris-a); }
+.nodo-hoy::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-coral);
+  animation: pulso 2.2s var(--ease-suave) infinite;
+}
+
+.banda {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  text-align: left;
+  color: var(--color-tinta);
+  background: var(--tono);
+  border-radius: 18px 0 0 18px;
+  transition: transform 100ms linear;
+  transform-origin: center;
+}
+.banda[data-nivel="vencido"] {
+  background: repeating-linear-gradient(135deg, var(--color-gris-a) 0 8px, var(--color-gris-b) 8px 16px);
+}
+.banda:active { transform: scaleY(0.96); }
+
+/* ───────── Entrada y revelado (solo transform y opacity) ───────── */
+.rev:not(.rev-visible) .anim { opacity: 0; }
+.rev-visible .anim-banda {
+  animation: entra-banda 520ms var(--ease-suave) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.rev-visible .anim-tramo {
+  animation: dibuja-tramo 520ms var(--ease-suave) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.rev-visible .anim-nodo {
+  animation: aparece-nodo 360ms var(--ease-suave) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms + 160ms);
+}
+.rev-visible .anim-fecha {
+  animation: fundido 360ms var(--ease-suave) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes entra-banda { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes dibuja-tramo { from { opacity: 0; transform: scaleY(0); } to { opacity: 1; transform: scaleY(1); } }
+@keyframes aparece-nodo { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+@keyframes fundido { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulso { 0% { opacity: 0.9; transform: scale(0.7); } 70%, 100% { opacity: 0; transform: scale(1.4); } }
+
+/* Encabezados de sección fijos mientras se recorre su sección */
+.encabezado-seccion {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-crema);
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+/* ───────── Hoja inferior ───────── */
+.hoja-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(28 20 16 / 0.5);
+  animation: fundido 320ms var(--ease-suave) both;
+}
+.hoja {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 42rem;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-crema);
+  border-radius: 28px 28px 0 0;
+  padding: 20px 20px 28px;
+  animation: hoja-sube 320ms var(--ease-suave) both;
+}
+.hoja-fondo[data-cerrando="true"] { animation: fundido-sale 200ms var(--ease-suave) both; pointer-events: none; }
+.hoja[data-cerrando="true"] { animation: hoja-baja 200ms var(--ease-suave) both; pointer-events: none; }
+@keyframes hoja-sube { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes hoja-baja { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@keyframes fundido-sale { from { opacity: 1; } to { opacity: 0; } }
+
+/* ───────── Aviso de éxito ───────── */
+.aviso-exito {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: 92px;
+  width: min(calc(100% - 32px), 28rem);
+  margin-left: calc(min(calc(100% - 32px), 28rem) / -2);
+  animation: aviso-entra 320ms var(--ease-suave) both;
+}
+.aviso-exito[data-saliendo="true"] { animation: aviso-sale 200ms var(--ease-suave) both; }
+@keyframes aviso-entra { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes aviso-sale { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(24px); } }
+
+/* ───────── Movimiento reducido: sin desplazamientos, solo fundidos cortos ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .rev-visible .anim-banda,
+  .rev-visible .anim-tramo,
+  .rev-visible .anim-nodo,
+  .rev-visible .anim-fecha {
+    animation: fundido 150ms linear backwards;
+    animation-delay: 0ms;
+  }
+  .nodo-hoy::after { animation: none; display: none; }
+  .hoja,
+  .aviso-exito { animation: fundido 150ms linear both; }
+  .hoja[data-cerrando="true"],
+  .aviso-exito[data-saliendo="true"] { animation: fundido-sale 150ms linear both; }
+  .hoja-fondo { animation: fundido 150ms linear both; }
+  .hoja-fondo[data-cerrando="true"] { animation: fundido-sale 150ms linear both; }
+  .banda { transition: none; }
+  .banda:active { transform: none; }
+}
