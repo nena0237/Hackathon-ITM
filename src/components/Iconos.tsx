@@ -76,6 +76,17 @@ export const IconoFaltan = ({ className = 'size-5' }: P) => (
     <path d="M8 12h8" />
   </svg>
 )
+export const IconoQr = ({ className = 'size-5' }: P) => (
+  <svg {...base} className={className}>
+    <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+    <path d="M14 14h2v2h-2zM18 14h2v2h-2zM16 16h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" />
+  </svg>
+)
+export const IconoDescarga = ({ className = 'size-5' }: P) => (
+  <svg {...base} className={className}>
+    <path d="M12 4v11M7 11l5 5 5-5M5 20h14" />
+  </svg>
+)
 
 /** Ícono del estado por urgencia (el color nunca va solo). */
 export function IconoNivel({ nivel, className }: { nivel: NivelUrgencia; className?: string }) {

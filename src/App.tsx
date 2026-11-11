@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BarraInferior, type Pestana } from './components/BarraInferior'
+import { HojaQr } from './components/HojaQr'
 import { IconoUsar } from './components/Iconos'
 import { useDespensa } from './hooks/useDespensa'
 import { useHoy } from './hooks/useHoy'
@@ -12,12 +14,34 @@ interface Mensaje {
   saliendo: boolean
 }
 
+function esAppNativa(): boolean {
+  try {
+    return Capacitor.isNativePlatform()
+  } catch {
+    return false
+  }
+}
+
 export default function App({ carga }: { carga: CargaInicial }) {
   const hoy = useHoy()
   const { ingredientes, acciones, falloGuardar } = useDespensa(carga, hoy)
   const [pestana, setPestana] = useState<Pestana>('despensa')
   const [aviso, setAviso] = useState<string | null>(carga.aviso)
   const [mensaje, setMensaje] = useState<Mensaje | null>(null)
+  const nativa = esAppNativa()
+  const [mostrarQr, setMostrarQr] = useState(() => {
+    if (typeof window === 'undefined' || nativa) return false
+    const params = new URLSearchParams(window.location.search)
+    return params.has('qr') || window.location.hash === '#qr'
+  })
+  const [cerrandoQr, setCerrandoQr] = useState(false)
+  const abridorQr = useRef<HTMLElement | null>(null)
+
+  const abrirQr = useCallback((abridor: HTMLElement) => {
+    abridorQr.current = abridor
+    setCerrandoQr(false)
+    setMostrarQr(true)
+  }, [])
 
   const avisar = useCallback((texto: string) => setMensaje({ texto, saliendo: false }), [])
 
@@ -52,11 +76,29 @@ export default function App({ carga }: { carga: CargaInicial }) {
 
       <main id="contenido-principal" tabIndex={-1} className="outline-none">
         {pestana === 'despensa' ? (
-          <Despensa ingredientes={ingredientes} hoy={hoy} acciones={acciones} avisar={avisar} />
+          <Despensa
+            ingredientes={ingredientes}
+            hoy={hoy}
+            acciones={acciones}
+            avisar={avisar}
+            onAbrirQr={nativa ? undefined : abrirQr}
+          />
         ) : (
-          <Recetas ingredientes={ingredientes} hoy={hoy} />
+          <Recetas ingredientes={ingredientes} hoy={hoy} onAbrirQr={nativa ? undefined : abrirQr} />
         )}
       </main>
+
+      {mostrarQr && (
+        <HojaQr
+          cerrando={cerrandoQr}
+          abridor={abridorQr.current}
+          onSolicitarCierre={() => setCerrandoQr(true)}
+          onCerrado={() => {
+            setMostrarQr(false)
+            setCerrandoQr(false)
+          }}
+        />
+      )}
 
       <div role="status" aria-live="polite">
         {mensaje && (

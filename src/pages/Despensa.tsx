@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { ConfirmarBorrado } from '../components/ConfirmarBorrado'
 import { ConfirmarDescarte } from '../components/ConfirmarDescarte'
+import { EncabezadoMarca } from '../components/EncabezadoMarca'
 import { FilaTiempo } from '../components/FilaTiempo'
 import { FormularioIngrediente } from '../components/FormularioIngrediente'
 import { FormularioUso } from '../components/FormularioUso'
@@ -26,6 +27,7 @@ interface Props {
   hoy: Fecha
   acciones: AccionesDespensa
   avisar: (mensaje: string) => void
+  onAbrirQr?: (abridor: HTMLElement) => void
 }
 
 function Seccion({
@@ -55,7 +57,7 @@ function Seccion({
   )
 }
 
-export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
+export function Despensa({ ingredientes, hoy, acciones, avisar, onAbrirQr }: Props) {
   const grupos = useMemo(() => agruparPorUrgencia(ingredientes, hoy), [ingredientes, hoy])
   const [hoja, setHoja] = useState<HojaAbierta | null>(null)
   const [cerrando, setCerrando] = useState(false)
@@ -241,7 +243,7 @@ export function Despensa({ ingredientes, hoy, acciones, avisar }: Props) {
 
   const encabezado = (extra?: React.ReactNode) => (
     <header className="pb-4 pt-6">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-tinta-suave">Food Saver</p>
+      <EncabezadoMarca onAbrirQr={onAbrirQr} />
       <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-3">
         <h1 className="text-[44px] leading-none">Despensa</h1>
         {extra}

@@ -1,10 +1,19 @@
 import { useMemo } from 'react'
 import { BloqueReceta } from '../components/BloqueReceta'
+import { EncabezadoMarca } from '../components/EncabezadoMarca'
 import { RECETAS } from '../data/recetas'
 import { sugerirRecetas } from '../domain/recetas'
 import type { Fecha, Ingrediente } from '../domain/tipos'
 
-export function Recetas({ ingredientes, hoy }: { ingredientes: Ingrediente[]; hoy: Fecha }) {
+export function Recetas({
+  ingredientes,
+  hoy,
+  onAbrirQr,
+}: {
+  ingredientes: Ingrediente[]
+  hoy: Fecha
+  onAbrirQr?: (abridor: HTMLElement) => void
+}) {
   const sugerencias = useMemo(() => sugerirRecetas(RECETAS, ingredientes, hoy), [ingredientes, hoy])
   const cocinables = sugerencias.filter((s) => s.estado === 'cocinable')
   const parciales = sugerencias.filter((s) => s.estado === 'parcial')
@@ -12,7 +21,7 @@ export function Recetas({ ingredientes, hoy }: { ingredientes: Ingrediente[]; ho
   return (
     <>
       <header className="pb-4 pt-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-tinta-suave">Food Saver</p>
+        <EncabezadoMarca onAbrirQr={onAbrirQr} />
         <h1 className="text-[44px] leading-none">Recetas</h1>
         <p className="mt-2 text-base text-tinta-suave">Primero las que aprovechan lo que vence antes.</p>
       </header>
